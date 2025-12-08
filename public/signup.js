@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- CONFIGURATION ---
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
@@ -13,57 +13,63 @@ const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__f
     measurementId: "G-4Z1285PTRT"
 };
 
-// Google Apps Script URL for Email Notifications
 const EMAIL_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbylC4OXreb74IxO0cmfpTHdFKjCJy1_TOiJfi3GRm6UoEdLhVquw8rbMGKb3fJc4xDW/exec"; 
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'nptel-map-portal';
 
-// --- PLAN DATA (Matches Pricing Page) ---
-const PLAN_DATA = {
-    "Standard": {
-        price: "$65",
-        speed: "200 Mbps",
-        isPopular: false
-    },
-    "Advanced": {
-        price: "$80",
-        speed: "500 Mbps",
-        isPopular: false
-    },
-    "Premium": {
-        price: "$89",
-        speed: "1 Gbps",
-        isPopular: true
-    }
+// Default Data (Hard Fallback)
+let PLAN_DATA = {
+    "Standard": { price: "$65", speed: "200 Mbps", isPopular: false },
+    "Advanced": { price: "$80", speed: "500 Mbps", isPopular: false },
+    "Premium": { price: "$89", speed: "1 Gbps", isPopular: true }
 };
 
 // --- AUTH ---
 async function initAuth() {
-    try {
-        await signInAnonymously(auth);
-    } catch (e) {
-        console.warn("Auth warning:", e);
-    }
+    try { await signInAnonymously(auth); } catch (e) { console.warn(e); }
 }
 initAuth();
 
 // --- LOGIC ---
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Get Params
+document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const address = params.get('address');
     const planKey = params.get('plan');
+    const campaignId = params.get('campaign');
 
-    // 2. Pre-fill Form
+    // 1. Fetch Global Default FIRST
+    try {
+        const defaultDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', 'global_default'));
+        if (defaultDoc.exists() && defaultDoc.data().plans) {
+            PLAN_DATA = defaultDoc.data().plans;
+            console.log("Applied global default pricing");
+        }
+    } catch (e) { console.error("Error loading defaults:", e); }
+
+    // 2. Fetch Campaign Override (Priority)
+    if (campaignId) {
+        try {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', campaignId);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                const data = snap.data();
+                if (data.plans) {
+                    PLAN_DATA = data.plans;
+                    console.log("Applied campaign pricing:", data.name);
+                }
+            }
+        } catch (e) { console.error("Error loading campaign", e); }
+    }
+
+    // 3. Pre-fill Form
     if (address) {
         document.getElementById('address').value = decodeURIComponent(address);
     }
     
-    // 3. Render Plan Summary
+    // 4. Render Plan Summary
     if (planKey) {
         document.getElementById('selected-plan').value = decodeURIComponent(planKey);
         renderPlanSummary(planKey);
@@ -71,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('plan-card-container').innerHTML = "<p>No plan selected.</p>";
     }
 
-    // 4. Handle Submit
+    // 5. Handle Submit
     const orderForm = document.getElementById('orderForm');
     if (orderForm) {
         orderForm.addEventListener('submit', handleOrderSubmit);
@@ -87,8 +93,9 @@ function renderPlanSummary(planKey) {
         return;
     }
 
-    const popularClass = plan.isPopular ? 'popular' : '';
-    const popularBadge = plan.isPopular ? '<div class="popular-badge">Most Popular</div>' : '';
+    const isPopular = (typeof plan.isPopular !== 'undefined') ? plan.isPopular : false;
+    const popularClass = isPopular ? 'popular' : '';
+    const popularBadge = isPopular ? '<div class="popular-badge">Most Popular</div>' : '';
 
     const html = `
         <div class="pricing-box ${popularClass}">
@@ -120,7 +127,6 @@ async function handleOrderSubmit(e) {
     const plan = document.getElementById('selected-plan').value;
     const btn = document.getElementById('submit-btn');
 
-    // Verify Recaptcha
     if (typeof grecaptcha !== 'undefined' && grecaptcha.getResponse) {
         if (grecaptcha.getResponse().length === 0) {
             alert("Please verify that you are not a robot.");
@@ -135,30 +141,22 @@ async function handleOrderSubmit(e) {
         const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous_order';
         const timestamp = new Date();
         
-        // 1. Save to Firestore
         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), {
             type: 'new_service_order',
-            name: name,
-            email: email,
-            phone: phone,
-            address: address,
-            plan: plan,
+            name, email, phone, address, plan,
             submittedAt: timestamp,
             uid: userId,
             status: 'pending'
         });
 
-        // 2. Send Notification Email via Apps Script
-        await sendNotificationEmail({
-            name, email, phone, address, plan, timestamp
-        });
+        await sendNotificationEmail({ name, email, phone, address, plan, timestamp });
 
         alert("Order submitted successfully! We will contact you shortly.");
         window.location.href = 'query.html'; 
 
     } catch (error) {
         console.error("Error submitting order:", error);
-        alert("There was an error processing your order. Please try again.");
+        alert("Error processing order. Please try again.");
         btn.disabled = false;
         btn.textContent = "Complete Order";
     }
@@ -179,23 +177,15 @@ async function sendNotificationEmail(data) {
     `;
 
     try {
-        // We use 'no-cors' mode because Apps Script doesn't return CORS headers by default for simple triggers.
-        // This means we won't get a readable response, but the request WILL be sent.
         await fetch(EMAIL_SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors', 
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8', 
-            },
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
-                to: "jmiller@nptel.com", // Hardcoded recipient
+                to: "jmiller@nptel.com", 
                 subject: subject,
                 htmlBody: htmlBody
             })
         });
-        console.log("Email notification trigger sent.");
-    } catch (e) {
-        console.error("Failed to send email notification:", e);
-        // We don't block the UI flow for email errors, as the DB save is the critical part.
-    }
+    } catch (e) { console.error("Failed to send email notification:", e); }
 }
