@@ -39,7 +39,22 @@
       #campaign-select { padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
       
       #plans-container { margin-bottom: 15px; }
-      .plan-row { background: #f9f9f9; padding: 10px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #eee; }
+      .plan-row { background: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #eee; }
+      
+      /* Promo Inputs Styling */
+      .promo-section {
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px dashed #ccc;
+          background-color: #fff3cd; /* Light yellow to signify "Deal" */
+          padding: 10px;
+          border-radius: 4px;
+          display: none; /* Hidden by default */
+      }
+      .promo-section.active { display: block; }
+      .promo-toggle-btn { 
+          background: none; border: none; color: #007bff; cursor: pointer; font-size: 0.8rem; text-decoration: underline; padding: 0;
+      }
     </style>
   </head>
   <body>
@@ -119,7 +134,7 @@
                       <!-- Dynamic Plans Section -->
                       <div class="form-section">
                           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                              <h3>Plan Overrides</h3>
+                              <h3>Plan Configuration</h3>
                               <button type="button" id="add-plan-btn" class="action-btn small"><i class="fa-solid fa-plus"></i> Add Plan</button>
                           </div>
                           

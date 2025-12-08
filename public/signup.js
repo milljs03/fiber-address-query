@@ -20,17 +20,14 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'nptel-map-portal';
 
-// Default Data (Hard Fallback)
 let PLAN_DATA = {
-    "Standard": { price: "$65", speed: "200 Mbps", isPopular: false },
-    "Advanced": { price: "$80", speed: "500 Mbps", isPopular: false },
+    "Standard": { price: "$65", speed: "200 Mbps" },
+    "Advanced": { price: "$80", speed: "500 Mbps" },
     "Premium": { price: "$89", speed: "1 Gbps", isPopular: true }
 };
 
 // --- AUTH ---
-async function initAuth() {
-    try { await signInAnonymously(auth); } catch (e) { console.warn(e); }
-}
+async function initAuth() { try { await signInAnonymously(auth); } catch (e) { console.warn(e); } }
 initAuth();
 
 // --- LOGIC ---
@@ -40,36 +37,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const planKey = params.get('plan');
     const campaignId = params.get('campaign');
 
-    // 1. Fetch Global Default FIRST
     try {
         const defaultDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', 'global_default'));
-        if (defaultDoc.exists() && defaultDoc.data().plans) {
-            PLAN_DATA = defaultDoc.data().plans;
-            console.log("Applied global default pricing");
-        }
-    } catch (e) { console.error("Error loading defaults:", e); }
+        if (defaultDoc.exists() && defaultDoc.data().plans) PLAN_DATA = defaultDoc.data().plans;
+    } catch (e) { console.error(e); }
 
-    // 2. Fetch Campaign Override (Priority)
     if (campaignId) {
         try {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', campaignId);
-            const snap = await getDoc(docRef);
-            if (snap.exists()) {
-                const data = snap.data();
-                if (data.plans) {
-                    PLAN_DATA = data.plans;
-                    console.log("Applied campaign pricing:", data.name);
-                }
-            }
-        } catch (e) { console.error("Error loading campaign", e); }
+            const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', campaignId));
+            if (snap.exists() && snap.data().plans) PLAN_DATA = snap.data().plans;
+        } catch (e) { console.error(e); }
     }
 
-    // 3. Pre-fill Form
-    if (address) {
-        document.getElementById('address').value = decodeURIComponent(address);
-    }
+    if (address) document.getElementById('address').value = decodeURIComponent(address);
     
-    // 4. Render Plan Summary
     if (planKey) {
         document.getElementById('selected-plan').value = decodeURIComponent(planKey);
         renderPlanSummary(planKey);
@@ -77,11 +58,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('plan-card-container').innerHTML = "<p>No plan selected.</p>";
     }
 
-    // 5. Handle Submit
     const orderForm = document.getElementById('orderForm');
-    if (orderForm) {
-        orderForm.addEventListener('submit', handleOrderSubmit);
-    }
+    if (orderForm) orderForm.addEventListener('submit', handleOrderSubmit);
 });
 
 function renderPlanSummary(planKey) {
@@ -97,15 +75,27 @@ function renderPlanSummary(planKey) {
     const popularClass = isPopular ? 'popular' : '';
     const popularBadge = isPopular ? '<div class="popular-badge">Most Popular</div>' : '';
 
+    // -- PROMO LOGIC FOR SUMMARY --
+    const hasPromo = !!plan.promoPrice;
+    let priceHtml = '';
+    if (hasPromo) {
+        priceHtml = `
+            <div style="text-decoration: line-through; color: #999; font-size: 1.2rem;">${plan.price}</div>
+            <span class="price" style="color: #dc2626;">${plan.promoPrice}<small>/mo</small></span>
+            <div style="font-weight: bold; color: #dc2626; margin-bottom: 10px;">${plan.promoLabel || 'Special Offer'}</div>
+        `;
+    } else {
+        priceHtml = `<span class="price">${plan.price}<small>/mo</small></span>`;
+    }
+
     const html = `
-        <div class="pricing-box ${popularClass}">
+        <div class="pricing-box ${popularClass}" style="max-width: 100%;">
             ${popularBadge}
             <div class="panel-heading">${planKey}</div>
             <div class="panel-body">
-                <span class="price">${plan.price}<small>/mo</small></span>
+                ${priceHtml}
                 <div class="speed-features">${plan.speed}</div>
                 <div class="speed-capability">Download & Upload</div>
-                
                 <div class="core-benefits">
                     <span class="highlight-text">Local Service</span>
                     <span class="highlight-text">Lifetime Price Lock</span>
@@ -113,13 +103,11 @@ function renderPlanSummary(planKey) {
             </div>
         </div>
     `;
-
     container.innerHTML = html;
 }
 
 async function handleOrderSubmit(e) {
     e.preventDefault();
-
     const name = document.getElementById('name').value;
     const email = document.getElementById('email').value;
     const phone = document.getElementById('phone').value;
@@ -139,21 +127,19 @@ async function handleOrderSubmit(e) {
 
     try {
         const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous_order';
-        const timestamp = new Date();
-        
         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), {
             type: 'new_service_order',
             name, email, phone, address, plan,
-            submittedAt: timestamp,
+            submittedAt: new Date(),
             uid: userId,
             status: 'pending'
         });
-
-        await sendNotificationEmail({ name, email, phone, address, plan, timestamp });
+        
+        // Notify
+        await sendNotificationEmail({ name, email, phone, address, plan, timestamp: new Date() });
 
         alert("Order submitted successfully! We will contact you shortly.");
         window.location.href = 'query.html'; 
-
     } catch (error) {
         console.error("Error submitting order:", error);
         alert("Error processing order. Please try again.");
@@ -163,19 +149,6 @@ async function handleOrderSubmit(e) {
 }
 
 async function sendNotificationEmail(data) {
-    const subject = `New Fiber Sign-Up: ${data.name}`;
-    const htmlBody = `
-        <h2>New Service Order Received</h2>
-        <p><strong>Name:</strong> ${data.name}</p>
-        <p><strong>Email:</strong> ${data.email}</p>
-        <p><strong>Phone:</strong> ${data.phone}</p>
-        <p><strong>Address:</strong> ${data.address}</p>
-        <p><strong>Selected Plan:</strong> ${data.plan}</p>
-        <p><strong>Time:</strong> ${data.timestamp.toLocaleString()}</p>
-        <hr>
-        <p>Please log in to the admin portal to manage this order.</p>
-    `;
-
     try {
         await fetch(EMAIL_SCRIPT_URL, {
             method: 'POST',
@@ -183,9 +156,9 @@ async function sendNotificationEmail(data) {
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
                 to: "jmiller@nptel.com", 
-                subject: subject,
-                htmlBody: htmlBody
+                subject: `New Fiber Sign-Up: ${data.name}`,
+                htmlBody: `<h2>New Service Order</h2><p>Name: ${data.name}</p><p>Plan: ${data.plan}</p><p>Address: ${data.address}</p>`
             })
         });
-    } catch (e) { console.error("Failed to send email notification:", e); }
+    } catch (e) { console.error("Failed to send email:", e); }
 }
