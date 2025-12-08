@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>NPTEL Map Portal</title>
+    <link rel="stylesheet" href="admin.css">
+    <!-- Suppress favicon 404 error -->
+    <link rel="icon" href="data:,">
+  </head>
+  <body>
+
+    <div id="login-screen">
+      <h1>NPTEL Map Portal</h1>
+      <p>Authorized Personnel Only</p>
+      <button id="login-btn">Sign in with Google</button>
+      <div id="auth-message" class="error-msg"></div>
+    </div>
+
+    <div id="app-container">
+      <div id="controls">
+        <span id="user-display"></span>
+        <!-- Updated to accept KMZ, KML, and JSON -->
+        <button id="import-btn" class="action-btn">Import File</button>
+        <input type="file" id="import-input" accept=".json,.kml,.kmz" style="display: none;">
+        
+        <button id="export-btn" class="action-btn">Export JSON</button>
+        <button id="logout-btn" class="action-btn logout-btn">Logout</button>
+        
+        <div id="admin-instructions">
+          <strong>Admin Mode:</strong><br>
+          Click to Select. Backspace to Delete.
+        </div>
+      </div>
+      <div id="map"></div>
+    </div>
+
+    <!-- 1. BRIDGE SCRIPT: Ensures initMap exists before Google Maps loads -->
+    <script>
+      window.isGoogleMapsReady = false;
+      window.initMap = function() {
+        window.isGoogleMapsReady = true;
+        // Dispatch a custom event to tell admin.js the map is ready
+        window.dispatchEvent(new Event('google-maps-ready'));
+      };
+    </script>
+
+    <!-- 2. EXTERNAL LIBRARIES for KMZ/KML Parsing -->
+    <!-- JSZip to unzip .kmz files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- toGeoJSON to convert KML xml to GeoJSON -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
+
+    <!-- 3. GOOGLE MAPS API: Calls initMap when done -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBw8z2IL4dN5oldPzRW3a581mkXC7VuXe4&libraries=drawing&callback=initMap" async defer></script>
+    
+    <!-- 4. MAIN LOGIC: Now safely waits for the bridge -->
+    <script type="module" src="admin.js"></script>
+  </body>
+</html>

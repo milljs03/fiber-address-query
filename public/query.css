@@ -1,0 +1,317 @@
+* {
+    box-sizing: border-box;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa; /* Slightly lighter gray */
+    height: 100%;
+}
+
+/* --- Header --- */
+.site-header {
+    background-color: #ffffff;
+    padding: 20px 50px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    height: 90px; 
+    display: flex;
+    align-items: center;
+}
+
+.logo-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo-img {
+    max-height: 50px; 
+    width: auto;
+    display: block;
+}
+
+/* --- Main Content --- */
+.main-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center; 
+    min-height: calc(100vh - 90px); 
+    padding: 20px;
+}
+
+.card {
+    background-color: #00a651; /* Default Green for Search Page */
+    color: white;
+    width: 100%;
+    max-width: 900px; /* Increased from 700px */
+    padding: 60px 50px; /* Increased padding */
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    transition: all 0.4s ease;
+}
+
+/* --- Unavailable State (Modern Neutral Style) --- */
+.card.unavailable {
+    background-color: #ffffff; /* Neutral White Background */
+    color: #333333; /* Dark Grey Text */
+    box-shadow: 0 20px 50px rgba(0,0,0,0.1); /* Softer, larger shadow */
+    border: 1px solid #e5e7eb; /* Subtle border */
+}
+
+.card.unavailable h1 {
+    color: #dc2626; /* Modern Red Text for Header */
+}
+
+.card.unavailable p {
+    color: #4b5563; /* Gray text for description */
+}
+
+.card.available {
+    background-color: #059669; 
+}
+
+.card h1 {
+    font-size: 2.2rem; 
+    margin-bottom: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.card p {
+    font-size: 1.1rem; 
+    line-height: 1.6;
+    margin-bottom: 35px;
+    max-width: 700px; /* Wider text area */
+    margin-left: auto;
+    margin-right: auto;
+    opacity: 0.95;
+}
+
+/* --- Integrated Search Bar --- */
+.search-bar-wrapper {
+    background-color: white;
+    border-radius: 6px;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    max-width: 700px; /* Wider search bar */
+    margin: 0 auto 25px auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: transform 0.2s;
+}
+
+.search-bar-wrapper:focus-within {
+    transform: scale(1.02);
+}
+
+#address-input {
+    flex-grow: 1;
+    border: none;
+    font-size: 1rem;
+    padding: 12px 15px;
+    outline: none;
+    border-radius: 4px;
+    color: #333;
+    min-width: 0;
+}
+
+#check-btn {
+    background-color: #0056b3; 
+    color: white;
+    border: none;
+    padding: 12px 25px; 
+    font-size: 1rem; 
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.2s;
+}
+
+#check-btn:hover {
+    background-color: #004494;
+}
+
+.card.unavailable #check-btn { 
+    background-color: #dc2626; /* Red button on neutral background */
+}
+
+/* --- Result Area --- */
+.hidden {
+    display: none !important;
+}
+
+#result-container {
+    margin-top: 30px;
+    animation: fadeIn 0.5s ease;
+}
+
+#result-icon-wrapper {
+    font-size: 4rem; 
+    margin-bottom: 15px;
+}
+
+#result-status {
+    font-size: 2rem; 
+    margin-bottom: 10px;
+}
+
+#result-detail {
+    font-size: 1.1rem; 
+}
+
+#reset-btn {
+    margin-top: 25px;
+    background: rgba(255,255,255,0.2);
+    border: 2px solid white;
+    color: white;
+    padding: 10px 25px;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#reset-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Autocomplete Dropdown Styling */
+.pac-container {
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    border: none;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 1rem;
+}
+.pac-item {
+    padding: 8px 12px;
+}
+
+/* --- Contact Form Styles (Modern & Wider) --- */
+.contact-form {
+    background: #f9fafb; /* Light gray form background */
+    padding: 40px; /* More padding */
+    border-radius: 8px;
+    text-align: left;
+    max-width: 800px; /* Significantly Wider */
+    width: 100%;
+    margin: 0 auto;
+    border: 1px solid #e5e7eb;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: 1px solid #d1d5db; /* Subtle border */
+    outline: none;
+    color: #111827;
+    background-color: white;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+    border-color: #00a651; /* Highlight color */
+    box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.1);
+}
+
+.form-group input:disabled {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+    color: #6b7280;
+}
+
+.g-recaptcha {
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: center;
+}
+
+#submit-lead-btn {
+    width: 100%;
+    background-color: #dc2626; /* Red theme button */
+    color: white;
+    border: none;
+    padding: 15px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    box-shadow: 0 4px 6px rgba(220, 38, 38, 0.2);
+}
+
+#submit-lead-btn:hover {
+    background-color: #b91c1c;
+    transform: translateY(-1px);
+}
+
+#submit-lead-btn:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 768px) {
+    .site-header {
+        padding: 15px 20px;
+        height: auto;
+        display: block;
+    }
+    
+    .logo-container {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .logo-img {
+        max-height: 40px;
+    }
+
+    .main-wrapper {
+        min-height: auto;
+        padding-top: 20px;
+    }
+
+    .card {
+        padding: 30px 20px;
+        border-radius: 8px;
+    }
+
+    .card h1 {
+        font-size: 1.8rem;
+        margin-bottom: 15px;
+    }
+
+    .contact-form {
+        padding: 20px;
+    }
+}

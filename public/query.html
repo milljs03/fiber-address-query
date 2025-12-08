@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Service Availability</title>
+    <link rel="stylesheet" href="query.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="data:,">
+</head>
+<body>
+
+    <!-- Header / Logo Section -->
+    <header class="site-header">
+        <div class="logo-container">
+            <div class="logo-left">
+                <img src="logos/community-fiber-logo.png" alt="Community Fiber" class="logo-img">
+            </div>
+            <div class="logo-right">
+                <img src="logos/NPtech-logo.png" alt="NP Tech" class="logo-img">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-wrapper">
+        <div id="service-card" class="card">
+            <h1 id="card-title">Can we serve your address?</h1>
+            <p id="card-desc">Check if your address can receive our services! We offer fast and reliable internet to areas within our coverage zone. Please enter your address to verify availability.</p>
+
+            <!-- Unified Search Bar -->
+            <div class="search-bar-wrapper">
+                <input type="text" id="address-input" placeholder="Start typing your address...">
+                <button id="check-btn">Check Address</button>
+            </div>
+            
+            <!-- Result Message (Hidden initially) -->
+            <div id="result-container" class="hidden">
+                <div id="result-icon-wrapper"><i id="result-icon" class="fa-solid"></i></div>
+                <h2 id="result-status"></h2>
+                <p id="result-detail"></p>
+                <button id="reset-btn">Check Another Address</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Hidden Map for Geometry Calculations -->
+    <div id="map" style="display: none;"></div>
+
+    <!-- Bridge Script -->
+    <script>
+      window.isGoogleMapsReady = false;
+      window.initMap = function() {
+        window.isGoogleMapsReady = true;
+        window.dispatchEvent(new Event('google-maps-ready'));
+      };
+    </script>
+
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBw8z2IL4dN5oldPzRW3a581mkXC7VuXe4&libraries=geometry,places&callback=initMap" async defer></script>
+    
+    <!-- Main Logic -->
+    <script type="module" src="query.js"></script>
+</body>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Unavailable</title>
+    <!-- Reusing the same CSS file for consistency -->
+    <link rel="stylesheet" href="query.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="data:,">
+    <!-- Google reCAPTCHA v2 API -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</head>
+<body>
+
+    <!-- Header / Logo Section -->
+    <header class="site-header">
+        <div class="logo-container">
+            <div class="logo-left">
+                <img src="logos/community-fiber-logo.png" alt="Community Fiber" class="logo-img">
+            </div>
+            <div class="logo-right">
+                <img src="logos/NPtech-logo.png" alt="NP Tech" class="logo-img">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-wrapper">
+        <div class="card unavailable">
+            <h1 id="card-title">We're Sorry</h1>
+            <p id="card-desc">Unfortunately, we currently cannot provide service to your address. Please fill out the form below so we can double-check your address availability and notify you about future developments in your area!</p>
+
+            <form id="lead-form" class="contact-form">
+                <div class="form-group">
+                    <label for="lead-name">Name:</label>
+                    <input type="text" id="lead-name" placeholder="Your Name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="lead-phone">Phone #:</label>
+                    <input type="tel" id="lead-phone" placeholder="Your Phone Number">
+                </div>
+
+                <div class="form-group">
+                    <label for="lead-email">Email:</label>
+                    <input type="email" id="lead-email" placeholder="Your Email Address">
+                    <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 5px;">* Please provide either phone or email.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="lead-address">Address:</label>
+                    <input type="text" id="lead-address" required disabled>
+                </div>
+
+                <!-- reCAPTCHA Container -->
+                <!-- REPLACE 'YOUR_RECAPTCHA_SITE_KEY' WITH YOUR ACTUAL KEY FROM GOOGLE ADMIN -->
+                <div class="g-recaptcha" data-sitekey="6Lduo28rAAAAAJtiCUnbRY4z_WagijZjllGt8xZS" data-callback="enableSubmit"></div>
+
+                <button type="submit" id="submit-lead-btn" disabled>Submit</button>
+            </form>
+
+            <div id="thank-you-msg" class="hidden">
+                <i class="fa-solid fa-circle-check" style="color: #059669; font-size: 4rem; margin-bottom: 20px;"></i>
+                <h2 style="color: #333;">Thank You!</h2>
+                <p style="color: #555;">We have received your information and will be in touch if service becomes available in your area.</p>
+                <a href="query.html" style="color: #00a651; text-decoration: underline; font-weight: bold;">Check another address</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Logic for Sorry Page -->
+    <script type="module" src="sorry.js"></script>
+
+    <!-- Global callback for Recaptcha -->
+    <script>
+        function enableSubmit() {
+            document.getElementById('submit-lead-btn').disabled = false;
+        }
+    </script>
+</body>
+</html>
