@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- CONFIGURATION ---
@@ -15,7 +15,7 @@ const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__f
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const auth = getAuth(app); // Still needed to check if a real user IS logged in
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'nptel-map-portal';
 
@@ -23,18 +23,21 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'nptel-map-portal';
 let map;
 let allPolygons = [];
 
-// --- AUTH ---
-async function initAuth() {
-    try {
-        await signInAnonymously(auth);
-    } catch (e) {
-        console.warn("Anonymous auth failed.", e);
+// --- SESSION HELPER ---
+// Since we removed signInAnonymously (to fix the 400 error), 
+// we generate a random ID to track this specific visitor's session.
+function getSessionId() {
+    let sid = localStorage.getItem('fiber_session_id');
+    if (!sid) {
+        sid = 'anon_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('fiber_session_id', sid);
     }
+    return sid;
 }
-initAuth();
 
 // --- LOGIC ---
 
+// Wait for Google Maps API to load
 if (window.isGoogleMapsReady) {
     initApp();
 } else {
@@ -43,12 +46,14 @@ if (window.isGoogleMapsReady) {
 
 function initApp() {
     // 1. Initialize Invisible Map
-    // We bind it to a hidden div in HTML to perform geometry calculations
-    map = new google.maps.Map(document.getElementById('map'), {
-        center: { lat: 41.5006, lng: -85.8305 },
-        zoom: 13,
-        disableDefaultUI: true
-    });
+    const mapEl = document.getElementById('map');
+    if (mapEl) {
+        map = new google.maps.Map(mapEl, {
+            center: { lat: 41.5006, lng: -85.8305 },
+            zoom: 13,
+            disableDefaultUI: true
+        });
+    }
 
     // 2. Load Polygons
     loadPolygons();
@@ -74,14 +79,16 @@ async function loadPolygons() {
         });
         console.log(`Loaded ${allPolygons.length} service zones.`);
     } catch (e) {
-        console.error("Error loading polygons.", e);
+        console.error("Error loading polygons. Ensure Firestore permissions allow public read.", e);
     }
 }
 
 function setupAutocomplete() {
     const input = document.getElementById('address-input');
+    if (!input) return;
+
     const autocomplete = new google.maps.places.Autocomplete(input);
-    autocomplete.bindTo('bounds', map);
+    if (map) autocomplete.bindTo('bounds', map);
 
     autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
@@ -93,16 +100,19 @@ function setupAutocomplete() {
 function setupButtons() {
     const checkBtn = document.getElementById('check-btn');
     const resetBtn = document.getElementById('reset-btn');
+    const input = document.getElementById('address-input');
     
-    // Check button manually triggers the logic if the user typed but didn't select
-    // (Note: Geocoding might be required if not using Autocomplete place object directly)
-    // For now, we rely on Autocomplete selection for accuracy.
-    checkBtn.addEventListener('click', () => {
-        // Trigger focus to encourage selection from dropdown
-        document.getElementById('address-input').focus();
-    });
+    if(checkBtn && input) {
+        checkBtn.addEventListener('click', () => {
+            // Focus input to encourage using the dropdown
+            input.focus(); 
+            // Optional: You could trigger geocoding here manually if they didn't select from dropdown
+        });
+    }
 
-    resetBtn.addEventListener('click', resetUI);
+    if(resetBtn) {
+        resetBtn.addEventListener('click', resetUI);
+    }
 }
 
 function evaluateLocation(place) {
@@ -118,73 +128,64 @@ function evaluateLocation(place) {
                 break;
             }
         }
+    } else {
+        console.error("Google Maps Geometry library not loaded.");
     }
 
-    // 2. Update UI
-    updateUI(isInside, address);
-
-    // 3. Log
-    logRequest(address, point.lat(), point.lng(), isInside);
+    // 2. Handle Result
+    if (isInside) {
+        // GREEN STATE -> Redirect to Pricing Page
+        // Log positive result THEN redirect
+        logRequest(address, point.lat(), point.lng(), true).finally(() => {
+            window.location.href = `pricing.html?address=${encodeURIComponent(address)}`;
+        });
+    } else {
+        // RED STATE -> Redirect to Sorry Page
+        // Log negative result THEN redirect
+        logRequest(address, point.lat(), point.lng(), false).finally(() => {
+            // Redirect to sorry.html with the address in the query string
+            window.location.href = `sorry.html?address=${encodeURIComponent(address)}`;
+        });
+    }
 }
 
 function updateUI(isAvailable, address) {
+    // Only handling Available state here now, as Unavailable redirects
+    if (!isAvailable) return;
+
     const card = document.getElementById('service-card');
     const title = document.getElementById('card-title');
     const desc = document.getElementById('card-desc');
-    const inputContainer = document.querySelector('.input-container');
-    const checkBtn = document.getElementById('check-btn');
-    
+    const inputContainer = document.querySelector('.search-bar-wrapper');
     const resultContainer = document.getElementById('result-container');
     const resultStatus = document.getElementById('result-status');
     const resultDetail = document.getElementById('result-detail');
     const resultIcon = document.getElementById('result-icon');
 
-    // Hide input elements
-    inputContainer.classList.add('hidden');
-    checkBtn.classList.add('hidden');
-    title.classList.add('hidden');
-    desc.classList.add('hidden');
+    // Check if elements exist before modifying to prevent "classList of null" error
+    if (inputContainer) inputContainer.classList.add('hidden');
+    if (title) title.classList.add('hidden');
+    if (desc) desc.classList.add('hidden');
 
-    // Show result elements
-    resultContainer.classList.remove('hidden');
-
-    if (isAvailable) {
-        card.className = 'card available'; // Green
-        resultIcon.className = 'fa-solid fa-circle-check';
-        resultStatus.textContent = 'Service Available!';
-        resultDetail.textContent = `Great news! We can provide service to ${address}.`;
-    } else {
-        card.className = 'card unavailable'; // Red
-        resultIcon.className = 'fa-solid fa-circle-xmark';
-        resultStatus.textContent = 'Service Unavailable';
-        resultDetail.textContent = `Sorry, ${address} is not currently within our service area.`;
+    if (resultContainer) {
+        resultContainer.classList.remove('hidden');
+        
+        if (card) card.className = 'card available'; // Green
+        if (resultIcon) resultIcon.className = 'fa-solid fa-circle-check';
+        if (resultStatus) resultStatus.textContent = 'Service Available!';
+        if (resultDetail) resultDetail.textContent = `Great news! We can provide service to ${address}.`;
     }
 }
 
 function resetUI() {
-    const card = document.getElementById('service-card');
-    const title = document.getElementById('card-title');
-    const desc = document.getElementById('card-desc');
-    const inputContainer = document.querySelector('.input-container');
-    const checkBtn = document.getElementById('check-btn');
-    const resultContainer = document.getElementById('result-container');
-    const input = document.getElementById('address-input');
-
-    // Reset classes and visibility
-    card.className = 'card';
-    inputContainer.classList.remove('hidden');
-    checkBtn.classList.remove('hidden');
-    title.classList.remove('hidden');
-    desc.classList.remove('hidden');
-    resultContainer.classList.add('hidden');
-    
-    input.value = '';
-    input.focus();
+    window.location.reload();
 }
 
 async function logRequest(address, lat, lng, isAvailable) {
     try {
-        const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous';
+        // Use existing auth user if available, otherwise use session ID
+        const userId = auth.currentUser ? auth.currentUser.uid : getSessionId();
+        
         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'service_requests'), {
             address: address,
             location: { lat: lat, lng: lng },

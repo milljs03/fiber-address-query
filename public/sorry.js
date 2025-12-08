@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- CONFIGURATION ---
@@ -19,15 +19,15 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'nptel-map-portal';
 
-// --- AUTH ---
-async function initAuth() {
-    try {
-        await signInAnonymously(auth);
-    } catch (e) {
-        console.warn("Anonymous auth failed.", e);
+// --- SESSION HELPER ---
+function getSessionId() {
+    let sid = localStorage.getItem('fiber_session_id');
+    if (!sid) {
+        sid = 'anon_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('fiber_session_id', sid);
     }
+    return sid;
 }
-initAuth();
 
 // --- LOGIC ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -36,13 +36,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const addressParam = urlParams.get('address');
     const addressInput = document.getElementById('lead-address');
 
-    if (addressParam) {
+    if (addressParam && addressInput) {
         addressInput.value = decodeURIComponent(addressParam);
     }
 
     // 2. Handle Form Submission
     const form = document.getElementById('lead-form');
-    form.addEventListener('submit', handleFormSubmit);
+    if (form) {
+        form.addEventListener('submit', handleFormSubmit);
+    }
 });
 
 async function handleFormSubmit(e) {
@@ -68,22 +70,26 @@ async function handleFormSubmit(e) {
     }
 
     // Verify Recaptcha (Simple client-side check)
-    if (grecaptcha.getResponse().length === 0) {
-        alert("Please verify that you are not a robot.");
-        return;
+    // Note: If running locally without a real key, this might error. 
+    // You can comment out if testing without a key.
+    if (typeof grecaptcha !== 'undefined' && grecaptcha.getResponse) {
+        if (grecaptcha.getResponse().length === 0) {
+            alert("Please verify that you are not a robot.");
+            return;
+        }
     }
 
     btn.disabled = true;
     btn.textContent = "Submitting...";
 
     try {
-        const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous';
+        const userId = auth.currentUser ? auth.currentUser.uid : getSessionId();
         
         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'service_requests'), {
             type: 'manual_check', 
             name: name,
             phone: phone,
-            email: email, // Added email
+            email: email, 
             address: address,
             submittedAt: new Date(),
             uid: userId
@@ -95,10 +101,10 @@ async function handleFormSubmit(e) {
         const desc = document.getElementById('card-desc');
         const thanks = document.getElementById('thank-you-msg');
 
-        form.classList.add('hidden');
-        title.classList.add('hidden');
-        desc.classList.add('hidden');
-        thanks.classList.remove('hidden');
+        if(form) form.classList.add('hidden');
+        if(title) title.classList.add('hidden');
+        if(desc) desc.classList.add('hidden');
+        if(thanks) thanks.classList.remove('hidden');
 
     } catch (error) {
         console.error("Error submitting lead:", error);

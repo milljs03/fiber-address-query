@@ -1,0 +1,429 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+/* --- Header (Shared) --- */
+.site-header {
+    background-color: #ffffff;
+    padding: 20px 50px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-container {
+    width: 100%;
+    max-width: 1400px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo-img {
+    max-height: 50px;
+    width: auto;
+    display: block;
+}
+
+/* --- Success Banner --- */
+.header-box {
+    background-color: #00a651; /* Brand Green */
+    color: white;
+    padding: 60px 20px;
+    text-align: center;
+    margin-bottom: -50px; /* Overlap effect */
+    padding-bottom: 100px;
+}
+
+.header-box h1 {
+    margin: 0 0 10px 0;
+    font-size: 2.5rem;
+}
+
+.header-box p {
+    font-size: 1.2rem;
+    margin: 0;
+    opacity: 0.9;
+}
+
+#display-address {
+    text-decoration: underline;
+}
+
+/* --- Pricing Layout --- */
+.pricing-container {
+    display: flex;
+    justify-content: center; /* Center them */
+    align-items: flex-start; /* Align top */
+    gap: 20px;
+    padding: 0 20px;
+    max-width: 1400px; /* Increased width to fit 3 in a row comfortably */
+    margin: 0 auto 60px auto;
+    flex-wrap: wrap; /* Allow wrap only on very small screens */
+}
+
+.pricing-box {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 40px 30px;
+    text-align: center;
+    width: 100%;
+    /* Adjusted max-width to fit 3 in a row on standard laptop screens */
+    flex: 1 1 300px; 
+    max-width: 380px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.pricing-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+}
+
+/* Specific styling for the Premium/popular card */
+.pricing-box.popular {
+    position: relative;
+    background: white; /* Ensure background is white */
+    border: none; 
+    transform: scale(1.05);
+    z-index: 1;
+}
+
+/* The pseudo-element acts as the border */
+.pricing-box.popular::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 12px; 
+    padding: 3px; /* Thickness of the border */
+    background: linear-gradient(110deg, #d4af37 0%, #f9e076 20%, #d4af37 40%, #f9e076 60%, #d4af37 80%, #f9e076 100%);
+    background-size: 200% 100%;
+    animation: goldShimmer 3s linear infinite;
+    -webkit-mask: 
+       linear-gradient(#fff 0 0) content-box, 
+       linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none; /* Let clicks pass through */
+    z-index: 2; /* On top of card content background but below interactive elements? Actually needs to be on top to show border */
+}
+
+.pricing-box.popular:hover {
+    transform: scale(1.05) translateY(-5px);
+}
+
+.popular-badge {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(110deg, #d4af37 0%, #f9e076 20%, #d4af37 40%, #f9e076 60%, #d4af37 80%, #f9e076 100%);
+    background-size: 200% 100%;
+    color: #333;
+    padding: 8px 25px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    white-space: nowrap;
+    animation: goldShimmer 3s linear infinite;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 3; /* Ensure it stays on top */
+}
+
+@keyframes goldShimmer {
+    0% {
+        background-position: 100% 0;
+    }
+    100% {
+        background-position: -100% 0;
+    }
+}
+
+/* --- Card Content --- */
+.panel-heading {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.price {
+    display: block;
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: #00a651; /* Green Price */
+    line-height: 1;
+    margin-bottom: 5px;
+}
+
+.price small {
+    font-size: 1.1rem;
+    font-weight: normal;
+    color: #666;
+}
+
+.speed-features {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333; /* Black Speed Text */
+    margin-top: 15px;
+}
+
+.speed-capability {
+    font-size: 1rem;
+    color: #777;
+    margin-bottom: 30px;
+    font-weight: 500;
+}
+
+/* --- Core Benefits (New Highlights) --- */
+.core-benefits {
+    margin-bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.highlight-text {
+    font-weight: 600;
+    color: #555;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Add checkmark icon via CSS before text */
+.highlight-text::before {
+    content: "\f00c"; /* FontAwesome Check */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    color: #00a651;
+}
+
+/* --- Buttons --- */
+.sign-up-btn {
+    background-color: #00a651;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.2s;
+    margin-bottom: 15px;
+}
+
+.sign-up-btn:hover {
+    background-color: #008c44;
+}
+
+.pricing-box.popular .sign-up-btn {
+    background-color: #00a651; /* Green Button for Popular */
+}
+.pricing-box.popular .sign-up-btn:hover {
+    background-color: #008c44; /* Green Hover */
+}
+
+/* --- Broadband Facts FADE EFFECT --- */
+.broadband-label-container {
+    width: 100%;
+    margin-top: 15px;
+    position: relative;
+    border: 3px solid black;
+    border-radius: 0;
+    overflow: hidden;
+}
+
+.broadband-facts-wrapper {
+    background: white;
+    text-align: left;
+    color: black;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.2;
+    transition: max-height 0.5s ease-out;
+}
+
+/* COLLAPSED STATE (Sneak Peek) */
+.broadband-facts-wrapper.collapsed {
+    max-height: 150px; /* Only show top part (Header + 1st row) */
+    overflow: hidden;
+    position: relative;
+}
+
+/* EXPANDED STATE */
+.broadband-facts-wrapper.expanded {
+    max-height: 2000px; /* Large enough to fit full content */
+}
+
+/* FADE OVERLAY */
+.sneak-peek-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 80px; /* Height of the fade */
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,1) 60%);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 10px;
+    z-index: 5;
+    transition: opacity 0.3s;
+}
+
+.broadband-facts-wrapper.expanded .sneak-peek-overlay {
+    opacity: 0;
+    pointer-events: none; /* Make click-through when hidden */
+}
+
+/* EXPAND BUTTON (Inside Overlay) */
+.expand-label-btn {
+    background: #000;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.expand-label-btn:hover {
+    background: #333;
+}
+
+/* Broadband Facts Content Styling */
+.bbf-header {
+    border-bottom: 5px solid black;
+    padding: 15px;
+}
+
+.bbf-title {
+    font-weight: 900;
+    font-size: 28px;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.bbf-provider {
+    font-weight: bold;
+    margin: 5px 0 0 0;
+    font-size: 16px;
+}
+
+.bbf-plan {
+    margin: 0;
+    font-size: 16px;
+}
+
+.bbf-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+    padding: 10px 15px;
+}
+
+.bbf-row.strong-bottom {
+    border-bottom: 3px solid black;
+}
+
+.bbf-val {
+    font-weight: bold;
+    text-align: right;
+    max-width: 50%;
+}
+
+.bbf-section-title {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    padding: 10px 15px;
+    border-bottom: 1px solid #ccc;
+    text-transform: uppercase;
+    font-size: 13px;
+}
+
+.bbf-footer {
+    padding: 15px;
+    font-size: 11px;
+    text-align: center;
+    background: #fff;
+}
+
+.bbf-footer p {
+    margin: 3px 0;
+    font-size: 11px;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Footer --- */
+.footer-container {
+    background-color: #333;
+    color: #fff;
+    padding: 40px 20px;
+    text-align: center;
+    margin-top: 50px;
+}
+
+.footer-container a {
+    color: #ccc;
+    text-decoration: none;
+    margin: 0 10px;
+}
+
+.footer-container a:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 900px) {
+    .pricing-container {
+        flex-direction: column; /* Stack on mobile/tablet */
+        align-items: center;
+    }
+
+    .pricing-box {
+        width: 100%;
+        max-width: 450px; /* Wider cards on mobile stack */
+    }
+
+    .pricing-box.popular {
+        transform: none;
+        order: -1; /* Put popular first on mobile */
+    }
+    
+    .pricing-box.popular:hover {
+        transform: none;
+    }
+    
+    .header-box h1 {
+        font-size: 2rem;
+    }
+}
