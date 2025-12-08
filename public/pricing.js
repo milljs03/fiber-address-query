@@ -82,8 +82,6 @@ function renderPlans(plans, address, campaignId, campaignName) {
         let expiryHtml = '';
         
         // Define price variables for Label
-        // If promo is active, the "Monthly Price" is the promo price.
-        // The "Price After" is the regular price.
         const labelMonthlyPrice = hasPromo ? plan.promoPrice : plan.price;
         const labelRegularPrice = plan.price; 
         
@@ -175,7 +173,7 @@ function renderPlans(plans, address, campaignId, campaignName) {
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; padding: 8px 15px;">
                                 <span style="padding-left: 10px;">Residential Install Fee</span>
-                                <span style="font-weight: bold;">$50-$150*</span>
+                                <span style="font-weight: bold;">$50 - $150*</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; padding: 8px 15px;">
                                 <span style="padding-left: 10px;">Equipment Fee (Includes Mesh Router)</span>
@@ -218,7 +216,7 @@ function renderPlans(plans, address, campaignId, campaignName) {
                                 <span style="font-weight: bold;">Unlimited</span>
                             </div>
 
-                            <div style="padding: 15px; font-size: 12px; text-align: center; background: #fff;">
+<div class="bbf-footer">
                                 <p style="margin: 5px 0;"><strong>Customer Support</strong></p>
                                 <p style="margin: 3px 0;">Phone: (574) 533-4237</p>
                                 <p style="margin: 3px 0;">Website: Community Fiber Network</p>
