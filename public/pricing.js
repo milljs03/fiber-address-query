@@ -1,14 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Get Address from URL
     const params = new URLSearchParams(window.location.search);
-    const address = params.get('address');
+    let address = params.get('address');
     
     // 2. Display Address
     const addressDisplay = document.getElementById('display-address');
     if (address && addressDisplay) {
         addressDisplay.textContent = address;
     } else {
-        addressDisplay.textContent = "Your Location";
+        if(addressDisplay) addressDisplay.textContent = "Your Location";
     }
 
     // 3. Bind Sign-Up Button Events
@@ -16,6 +16,12 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', (e) => {
             const planBox = e.target.closest('.pricing-box');
             const plan = planBox.dataset.plan;
+            
+            // If address wasn't in URL, try to grab it from display (fallback)
+            if (!address && addressDisplay) {
+                address = addressDisplay.textContent !== "Your Location" ? addressDisplay.textContent : "";
+            }
+
             handleSignUp(plan, address);
         });
     });
@@ -37,12 +43,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function handleSignUp(plan, address) {
-    if (!address) {
-        address = "Unspecified Address";
+    // Construct the URL with query parameters
+    let url = `signup.html?plan=${encodeURIComponent(plan)}`;
+    
+    // Only append address if it exists and isn't the placeholder
+    if (address && address !== "Unspecified Address" && address !== "Your Location") {
+        url += `&address=${encodeURIComponent(address)}`;
     }
     
-    const url = `signup.html?plan=${encodeURIComponent(plan)}&address=${encodeURIComponent(address)}`;
-    console.log(`Navigating to: ${url}`);
-    
-    alert(`Great choice! You selected the ${plan} plan for ${address}. \n\n(This would normally take you to the final checkout page)`);
+    // Redirect to the signup page
+    window.location.href = url;
 }

@@ -81,6 +81,7 @@ body, html {
     position: relative;
     display: flex;
     flex-direction: column;
+    margin-top: 0; /* Ensure no margin pushes it down */
 }
 
 .pricing-box:hover {
@@ -93,8 +94,11 @@ body, html {
     position: relative;
     background: white; /* Ensure background is white */
     border: none; 
-    transform: scale(1.05);
+    transform: scale(1.05); /* Slight scale up */
     z-index: 1;
+    margin-top: -10px; /* Slight negative margin to center the scale effect vertically if needed, or remove if causing alignment issues. Actually, scale causes it to grow from center. */
+    /* To align tops perfectly while scaled: transform-origin: top center; might be better, or just rely on flex-start */
+    transform-origin: center top; 
 }
 
 /* The pseudo-element acts as the border */
@@ -106,7 +110,7 @@ body, html {
     padding: 3px; /* Thickness of the border */
     background: linear-gradient(110deg, #d4af37 0%, #f9e076 20%, #d4af37 40%, #f9e076 60%, #d4af37 80%, #f9e076 100%);
     background-size: 200% 100%;
-    animation: goldShimmer 3s linear infinite;
+    animation: goldShimmer 5s linear infinite;
     -webkit-mask: 
        linear-gradient(#fff 0 0) content-box, 
        linear-gradient(#fff 0 0);
@@ -134,7 +138,7 @@ body, html {
     font-size: 0.9rem;
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     white-space: nowrap;
-    animation: goldShimmer 3s linear infinite;
+    animation: goldShimmer 8s linear infinite;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     z-index: 3; /* Ensure it stays on top */

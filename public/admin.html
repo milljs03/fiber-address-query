@@ -1,58 +1,114 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>NPTEL Map Portal</title>
+    <title>NPTEL Admin Portal</title>
     <link rel="stylesheet" href="admin.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Suppress favicon 404 error -->
     <link rel="icon" href="data:,">
   </head>
   <body>
 
+    <!-- Login Screen -->
     <div id="login-screen">
-      <h1>NPTEL Map Portal</h1>
+      <h1>NPTEL Admin Portal</h1>
       <p>Authorized Personnel Only</p>
       <button id="login-btn">Sign in with Google</button>
       <div id="auth-message" class="error-msg"></div>
     </div>
 
+    <!-- Main App Container -->
     <div id="app-container">
-      <div id="controls">
-        <span id="user-display"></span>
-        <!-- Updated to accept KMZ, KML, and JSON -->
-        <button id="import-btn" class="action-btn">Import File</button>
-        <input type="file" id="import-input" accept=".json,.kml,.kmz" style="display: none;">
-        
-        <button id="export-btn" class="action-btn">Export JSON</button>
-        <button id="logout-btn" class="action-btn logout-btn">Logout</button>
-        
-        <div id="admin-instructions">
-          <strong>Admin Mode:</strong><br>
-          Click to Select. Backspace to Delete.
+      
+      <!-- Top Navigation Bar -->
+      <nav class="top-nav">
+        <div class="nav-left">
+            <span class="brand">NPTEL Admin</span>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="map-view"><i class="fa-solid fa-map"></i> Map Editor</button>
+                <button class="tab-btn" data-tab="analytics-view"><i class="fa-solid fa-chart-line"></i> Analytics & Orders</button>
+            </div>
         </div>
+        <div class="nav-right">
+            <span id="user-display"></span>
+            <button id="logout-btn" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+        </div>
+      </nav>
+
+      <!-- TAB 1: MAP VIEW -->
+      <div id="map-view" class="tab-content active">
+          <div id="controls">
+            <!-- Map Controls -->
+            <button id="import-btn" class="action-btn"><i class="fa-solid fa-file-import"></i> Import</button>
+            <input type="file" id="import-input" accept=".json,.kml,.kmz" style="display: none;">
+            
+            <button id="export-btn" class="action-btn"><i class="fa-solid fa-file-export"></i> Export</button>
+            
+            <div id="admin-instructions">
+              <strong>Editor Mode:</strong> Click shape to Select. Backspace to Delete.
+            </div>
+          </div>
+          <div id="map"></div>
       </div>
-      <div id="map"></div>
+
+      <!-- TAB 2: ANALYTICS VIEW -->
+      <div id="analytics-view" class="tab-content">
+          <div class="dashboard-container">
+              
+              <!-- Stats Cards -->
+              <div class="stats-row">
+                  <!-- Will be populated by JS -->
+                  <div class="stat-card loading">Loading stats...</div>
+              </div>
+
+              <!-- Orders Table -->
+              <div class="data-section">
+                  <div class="section-header">
+                      <h2>Recent Orders (View Only)</h2>
+                      <button id="refresh-data-btn" class="icon-btn"><i class="fa-solid fa-arrows-rotate"></i></button>
+                  </div>
+                  <div class="table-wrapper">
+                      <table id="orders-table">
+                          <thead>
+                              <tr>
+                                  <th>Date</th>
+                                  <th>Name</th>
+                                  <th>Plan</th>
+                                  <th>Address</th>
+                                  <th>Contact</th>
+                                  <th>Status</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              <!-- Populated by JS -->
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+
+          </div>
+      </div>
+
     </div>
 
-    <!-- 1. BRIDGE SCRIPT: Ensures initMap exists before Google Maps loads -->
+    <!-- 1. BRIDGE SCRIPT -->
     <script>
       window.isGoogleMapsReady = false;
       window.initMap = function() {
         window.isGoogleMapsReady = true;
-        // Dispatch a custom event to tell admin.js the map is ready
         window.dispatchEvent(new Event('google-maps-ready'));
       };
     </script>
 
-    <!-- 2. EXTERNAL LIBRARIES for KMZ/KML Parsing -->
-    <!-- JSZip to unzip .kmz files -->
+    <!-- 2. EXTERNAL LIBRARIES -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <!-- toGeoJSON to convert KML xml to GeoJSON -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
 
-    <!-- 3. GOOGLE MAPS API: Calls initMap when done -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBw8z2IL4dN5oldPzRW3a581mkXC7VuXe4&libraries=drawing&callback=initMap" async defer></script>
+    <!-- 3. GOOGLE MAPS API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBw8z2IL4dN5oldPzRW3a581mkXC7VuXe4&libraries=drawing,geometry,places&callback=initMap" async defer></script>
     
-    <!-- 4. MAIN LOGIC: Now safely waits for the bridge -->
+    <!-- 4. MAIN LOGIC -->
     <script type="module" src="admin.js"></script>
   </body>
 </html>

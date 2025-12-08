@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Order</title>
+    <link rel="stylesheet" href="signup.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="data:,">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="site-header">
+        <div class="logo-container">
+            <div class="logo-left">
+                <img src="logos/community-fiber-logo.png" alt="Community Fiber" class="logo-img">
+            </div>
+            <div class="logo-right">
+                <img src="logos/NPtech-logo.png" alt="NP Tech" class="logo-img">
+            </div>
+        </div>
+    </header>
+
+    <main class="main-wrapper">
+        <div class="signup-layout">
+            
+            <!-- Left Column: Form -->
+            <div class="form-container">
+                <div class="form-header">
+                    <h2><i class="fa-solid fa-clipboard-check"></i> Great Pick!</h2>
+                    <p>You're one step closer to fiber internet. Please provide your details to finalize the request.</p>
+                </div>
+
+                <!-- New Notice Section -->
+                <div class="notice-box">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <p><strong>Note:</strong> One of our employees will reach out to confirm service availability and request additional billing information.</p>
+                </div>
+
+                <form id="orderForm">
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" name="name" placeholder="John Doe" required>
+                    </div>
+
+                    <div class="form-group-row">
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" placeholder="john@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone" placeholder="(555) 123-4567" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">Service Address</label>
+                        <div class="readonly-input-wrapper">
+                            <input type="text" id="address" name="address" readonly>
+                            <i class="fa-solid fa-lock"></i>
+                        </div>
+                    </div>
+
+                    <!-- Hidden Input for Plan -->
+                    <input type="hidden" id="selected-plan" name="plan">
+
+                    <!-- reCAPTCHA -->
+                    <!-- REPLACE WITH YOUR SITE KEY -->
+                    <div class="g-recaptcha" data-sitekey="6Lduo28rAAAAAJtiCUnbRY4z_WagijZjllGt8xZS"></div>
+
+                    <div class="form-footer">
+                        <button type="submit" id="submit-btn">Complete Order</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right Column: Order Summary (Dynamic Plan Card) -->
+            <div class="summary-container">
+                <h3>Order Summary</h3>
+                <div id="plan-card-container">
+                    <!-- The selected plan card will be injected here by JS -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="footer-container">
+        <p>&copy; 2024 NPTech & Community Fiber. All rights reserved.</p>
+        <p><a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+    </footer>
+
+    <script type="module" src="signup.js"></script>
+</body>
+</html>
