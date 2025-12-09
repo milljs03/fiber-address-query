@@ -15,31 +15,68 @@ body, html {
     flex-direction: column;
 }
 
+/* --- Header --- */
+.site-header {
+    background-color: #ffffff;
+    padding: 15px 40px; /* Reduced padding */
+    /* Increased shadow opacity and size to cast over ribbon */
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+    height: 80px; /* Reduced height */
+    display: flex;
+    align-items: center;
+    position: relative;
+    z-index: 1100; /* Header stays ON TOP of ribbon */
+    width: 100%;
+}
+
+.logo-container {
+    width: 100%;
+    max-width: 1200px; /* Reduced max-width */
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo-img {
+    max-height: 45px; /* Smaller logos */
+    width: auto;
+    display: block;
+}
+
 /* --- Celebration Ribbon (Left Sidebar) --- */
 .celebration-ribbon {
-    position: fixed;
-    left: 0;
+    position: absolute; /* Changed from fixed to absolute so it scrolls with page */
+    left: 20px; /* Added cushion from the left edge */
     top: 0;
-    bottom: 0;
-    width: 260px; /* Slightly wider for image */
+    /* bottom: 0; Removed to allow it to be static height based on content or explicit height */
+    height: 100%; /* Spans the full height of the container */
+    width: 240px; /* Slightly narrower */
     background: linear-gradient(160deg, #1e3a8a 0%, #2563eb 100%); /* Deep Blue Gradient */
     color: white;
-    padding: 50px 25px;
+    /* Added top padding so content clears the header (100px header + spacing) */
+    padding: 100px 20px 50px 20px; /* Reduced padding */
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    z-index: 1000;
-    box-shadow: 4px 0 25px rgba(0,0,0,0.15);
-    overflow: hidden; /* For flare */
+    z-index: 1000; /* Below Header, Above Footer/Body */
+    
+    /* "M" / Swallowtail Cut at Bottom */
+    /* Polygon: TL, TR, BR, Bottom-Mid-Up, BL */
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 95%, 0 100%);
+    
+    /* Drop shadow via filter since clip-path cuts box-shadow */
+    /* Increased shadow size to cast over footer */
+    filter: drop-shadow(4px 4px 15px rgba(0,0,0,0.4));
 }
 
 /* Badge Container - WAX SEAL / BANNER STYLE */
 .ribbon-badge {
     position: relative;
-    width: 160px; /* Slightly larger for the seal effect */
-    height: 160px;
-    margin-bottom: 25px;
+    width: 140px; /* Smaller badge */
+    height: 140px;
+    margin-bottom: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -47,11 +84,6 @@ body, html {
 
 /* Gold Circle for Logo -> Embossed Coin/Seal Look */
 .logo-circle {
-    /* Updated: Darker/Rich Background to make gold pop, or keep gold if user prefers full coin look.
-       User provided a "gold_nptech.png", assuming the image itself is gold.
-       I will use a dark, rich background for contrast, or a subtle gold one.
-       Let's stick to the embossed gold rim, but a simpler background.
-    */
     background: radial-gradient(circle, #14289c, #4b4444); /* Clean background for the PNG */
     border-radius: 50%;
     width: 100%;
@@ -59,14 +91,14 @@ body, html {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 15px; /* Tighter padding for the logo */
+    padding: 12px; /* Reduced padding */
     
     /* 3D Embossed Effect Frame */
-    border: 4px solid #d4af37; /* Metallic Gold Border */
+    border: 3px solid #d4af37; /* Metallic Gold Border - slightly thinner */
     box-shadow: 
         inset 2px 2px 5px rgba(0,0,0,0.2), 
         0 5px 15px rgba(0,0,0,0.3),
-        0 0 0 2px #b8860b; /* Outer definition ring */
+        0 0 0 2px #b8860b; 
     
     z-index: 2;
     position: relative;
@@ -83,7 +115,7 @@ body, html {
     height: 200%;
     background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
     transform: rotate(30deg);
-    animation: seal-shimmer 6s infinite ease-in-out; /* Slow shimmer */
+    animation: seal-shimmer 6s infinite ease-in-out; 
     pointer-events: none;
 }
 
@@ -97,27 +129,27 @@ body, html {
 .ribbon-badge::before {
     content: "";
     position: absolute;
-    bottom: 10px;
+    bottom: 8px;
     z-index: 0;
     width: 120%;
-    height: 40px;
-    background: #b8860b; /* Dark gold ribbon tail */
+    height: 35px; /* Smaller ribbon tail */
+    background: #b8860b; 
     transform: rotate(-15deg);
-    box-shadow: 0 5px 10px rgba(0,0,0,0.3);
-    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    border-radius: 4px;
 }
 
 .ribbon-badge::after {
     content: "";
     position: absolute;
-    bottom: 10px;
+    bottom: 8px;
     z-index: 0;
     width: 120%;
-    height: 40px;
-    background: #d4af37; /* Lighter gold ribbon tail */
+    height: 35px; /* Smaller ribbon tail */
+    background: #d4af37; 
     transform: rotate(15deg);
-    box-shadow: 0 5px 10px rgba(0,0,0,0.3);
-    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    border-radius: 4px;
 }
 
 
@@ -125,19 +157,18 @@ body, html {
     width: 100%;
     height: auto;
     object-fit: contain;
-    /* REMOVED FILTERS: User provided a pre-styled gold image */
     transform: rotate(0deg); 
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); /* Just a shadow */
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); 
 }
 
-/* Gold Flare Effect - Kept but made more subtle behind */
+/* Gold Flare Effect */
 .gold-flare {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 180px;
-    height: 180px;
+    width: 160px; /* Reduced flare size */
+    height: 160px;
     background: radial-gradient(circle, rgba(255,215,0,0.3) 0%, rgba(255,215,0,0) 70%);
     border-radius: 50%;
     animation: pulse-gold 4s infinite ease-in-out;
@@ -152,16 +183,16 @@ body, html {
 
 .celebration-title {
     font-family: 'Georgia', serif;
-    font-size: 2.2rem;
+    font-size: 1.8rem; /* Smaller title */
     color: #ffd700; /* Gold */
-    margin: 0 0 10px 0;
+    margin: 0 0 8px 0;
     text-shadow: 0 2px 4px rgba(0,0,0,0.3);
     font-weight: bold;
 }
 
 .ribbon-content p {
-    font-size: 1.05rem;
-    line-height: 1.6;
+    font-size: 0.95rem; /* Smaller text */
+    line-height: 1.5;
     margin: 0;
     font-weight: 300;
     opacity: 0.95;
@@ -176,15 +207,15 @@ body, html {
 
 .ribbon-footer {
     margin-top: auto; /* Push to bottom */
-    padding-top: 30px;
+    padding-top: 25px;
     border-top: 1px solid rgba(255,255,255,0.2);
     width: 100%;
 }
 
 .ribbon-footer i {
-    font-size: 1.5rem;
+    font-size: 1.3rem; /* Smaller icon */
     color: #ef4444; /* Heart Red */
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     display: block;
     filter: drop-shadow(0 0 5px rgba(239,68,68,0.5));
 }
@@ -192,36 +223,9 @@ body, html {
 .slogan {
     font-family: 'Georgia', serif;
     font-style: italic;
-    font-size: 1rem;
+    font-size: 0.9rem; /* Smaller slogan */
     opacity: 0.9;
     color: #ffffff; /* Gold tint for slogan */
-}
-
-/* --- Header --- */
-.site-header {
-    background-color: #ffffff;
-    padding: 20px 50px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-    height: 100px; 
-    display: flex;
-    align-items: center;
-    position: relative;
-    z-index: 10;
-}
-
-.logo-container {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.logo-img {
-    max-height: 55px;
-    width: auto;
-    display: block;
 }
 
 /* --- Main Content --- */
@@ -231,15 +235,37 @@ body, html {
     flex-direction: column;
     justify-content: center;
     align-items: center; 
-    padding: 40px 20px;
+    padding: 30px 20px; /* Reduced padding */
+    position: relative; /* Ensure context for absolute positioning if needed, though ribbon is absolute to body */
+    /* REMOVED: padding-left: 280px; - This was pushing content off-center relative to ribbon */
+    width: 100%; /* Ensure full width availability */
 }
 
-/* --- Responsive Adjustments for Ribbon --- */
+/* --- Responsive Adjustments --- */
 @media (min-width: 1200px) {
-    /* Push content over on large screens */
-    body {
-        padding-left: 260px; /* Adjusted for wider ribbon */
-    }
+    /* Push MAIN CONTENT & FOOTER over on large screens 
+       Body padding is removed because Header is full width now */
+    
+    /* REMOVE: .main-wrapper, .footer-container padding-left */
+    /* .main-wrapper, .footer-container { padding-left: 280px; } */
+    
+    /* Instead, center the card within the wrapper, ignoring the ribbon space visually */
+    /* The ribbon is absolute, so it floats over. We just need to make sure the card doesn't touch it */
+    
+    /* Actually, if we want it CENTERED on the PAGE (ignoring ribbon), we do nothing extra 
+       as long as the ribbon doesn't overlap the card.
+       However, if the ribbon overlaps the card on 1200px+, we might want a slight offset or just z-index handling.
+       Given the card max-width is 800px, on a 1200px screen, 
+       (1200 - 800) / 2 = 200px margin on each side.
+       The ribbon is 240px + 20px left = 260px wide.
+       So it WILL overlap the card slightly on 1200px screens if perfectly centered.
+       
+       Let's add a safe padding-left ONLY if screen is wide enough, 
+       or just keep it centered but ensure z-index of card is higher?
+       User said "centered on the page, not relative to the ribbon". 
+       This usually means absolute center of viewport.
+       If so, I will remove the padding-left entirely.
+    */
 }
 
 @media (max-width: 1199px) {
@@ -249,116 +275,26 @@ body, html {
     }
 }
 
-/* --- NEW: Animated Connection Graphic (Outside Card) --- */
-.connection-anim-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 30px; /* Wider gap between icons */
-    margin: 0 auto 30px auto; /* Space below animation */
-    width: 100%;
-    max-width: 800px; /* Much wider */
-    padding: 0 20px;
-    opacity: 0.8; /* Subtle look */
-}
-
-.anim-icon {
-    font-size: 2.5rem; 
-    color: #9ca3af;
-    position: relative;
-    z-index: 2;
-    transition: all 0.3s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-/* Labels Removed in CSS */
-
-.anim-icon.business {
-    color: #6b7280; 
-}
-
-.anim-icon.home {
-    color: #00a651; 
-}
-
-.anim-line {
-    flex-grow: 1;
-    height: 4px; /* Thinner line for subtlety */
-    background-color: #cbd5e1; /* Darker gray for visibility on bg */
-    border-radius: 4px;
-    position: relative;
-    overflow: hidden;
-}
-
-.anim-signal {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 200px; /* Longer signal tail */
-    height: 100%;
-    background: linear-gradient(90deg, transparent, #00a651);
-    transform: translateX(-100%);
-    animation: signal-travel 4s infinite linear; /* Slower animation */
-}
-
-/* Spouting Wifi Icon */
-.anim-wifi-spout {
-    position: absolute;
-    top: -30px;
-    left: 50%;
-    transform: translateX(-50%) scale(0);
-    font-size: 1.8rem;
-    color: #00a651;
-    opacity: 0;
-    animation: wifi-pop 4s infinite linear; /* Sync with signal */
-    pointer-events: none;
-}
-
-/* Animations */
-@keyframes signal-travel {
-    0% { transform: translateX(-100%); }
-    50% { transform: translateX(800px); } /* Move fully across wider area */
-    100% { transform: translateX(800px); } /* Pause for rest of cycle */
-}
-
-@keyframes wifi-pop {
-    0%, 45% { transform: translateX(-50%) scale(0) translateY(10px); opacity: 0; }
-    50% { transform: translateX(-50%) scale(1.2) translateY(0); opacity: 1; }
-    70% { transform: translateX(-50%) scale(1.5) translateY(-25px); opacity: 0; }
-    100% { opacity: 0; }
-}
-
-/* Home Icon Reaction */
-.anim-icon.home i {
-    display: block;
-    animation: home-react 4s infinite linear;
-}
-
-@keyframes home-react {
-    0%, 48% { transform: scale(1); }
-    52% { transform: scale(1.2); filter: drop-shadow(0 0 8px rgba(0, 166, 81, 0.4)); }
-    60% { transform: scale(1); }
-    100% { transform: scale(1); }
-}
-
-
-/* --- The Card (Sleek & Big Style) --- */
+/* --- The Card (Sleek & Big Style - Scaled Down) --- */
 .card {
     background-color: #ffffff;
     width: 100%;
-    max-width: 900px; /* Wider card */
-    padding: 80px 60px; /* More breathing room */
-    border-radius: 24px; /* Softer corners */
+    max-width: 800px; /* Reduced max-width */
+    padding: 60px 40px; /* Reduced padding */
+    border-radius: 20px; /* Slightly reduced radius */
     text-align: center;
     /* Deep, layered shadow for "floating" effect */
     box-shadow: 
-        0 25px 50px -12px rgba(0, 0, 0, 0.1),
+        0 20px 40px -10px rgba(0, 0, 0, 0.1),
         0 0 0 1px rgba(0,0,0,0.02);
     position: relative;
     overflow: hidden;
     transition: transform 0.3s ease;
+    z-index: 900; /* Ensure card is below ribbon z-index (1000) if they overlap, 
+                     OR make card higher if user wants card visible over ribbon? 
+                     Usually ribbon sidebar stays on top or pushes content.
+                     If "centered on page", ribbon might cover left side of card.
+                     I will set z-index lower than ribbon. */
 }
 
 /* Top Accent Bar */
@@ -366,26 +302,26 @@ body, html {
     content: "";
     position: absolute;
     top: 0; left: 0; right: 0;
-    height: 8px; /* Thicker accent */
+    height: 6px; /* Slightly thinner accent */
     background: linear-gradient(90deg, #00a651, #10b981);
 }
 
 /* --- Typography --- */
 .card h1 {
-    font-size: 3.5rem; /* Massive Headline */
-    margin-bottom: 20px;
+    font-size: 2.8rem; /* Reduced Headline */
+    margin-bottom: 15px;
     font-weight: 800;
     color: #111827; /* Almost black */
-    letter-spacing: -1px;
+    letter-spacing: -0.5px;
     line-height: 1.1;
 }
 
 .card p {
-    font-size: 1.25rem; /* Larger body text */
-    line-height: 1.6;
-    margin-bottom: 50px;
+    font-size: 1.1rem; /* Reduced body text */
+    line-height: 1.5;
+    margin-bottom: 40px;
     color: #4b5563; /* Muted gray */
-    max-width: 700px;
+    max-width: 600px; /* Reduced max-width */
     margin-left: auto;
     margin-right: auto;
 }
@@ -393,15 +329,15 @@ body, html {
 /* --- Search Container --- */
 .search-container {
     display: flex;
-    gap: 15px;
-    max-width: 800px; /* Wider search area */
+    gap: 12px; /* Smaller gap */
+    max-width: 700px; /* Reduced max-width */
     margin: 0 auto;
     
     /* --- NEW: Highlighting Box --- */
     background-color: #f0fdf4; /* Light green tint background */
     border: 1px solid #d1fae5; /* Subtle green border */
-    padding: 20px;
-    border-radius: 20px;
+    padding: 15px; /* Reduced padding */
+    border-radius: 16px; /* Reduced radius */
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.03); /* Inner shadow for depth */
 }
 
@@ -412,19 +348,19 @@ body, html {
 
 .search-icon {
     position: absolute;
-    left: 25px;
+    left: 20px; /* Adjusted position */
     top: 50%;
     transform: translateY(-50%);
     color: #9ca3af;
-    font-size: 1.2rem;
+    font-size: 1.1rem; /* Smaller icon */
 }
 
 #address-input {
     width: 100%;
     border: 2px solid #e5e7eb;
-    font-size: 1.2rem; /* Bigger text input */
-    padding: 20px 25px 20px 60px; /* Space for icon + chunky padding */
-    border-radius: 16px;
+    font-size: 1.1rem; /* Slightly smaller text input */
+    padding: 16px 20px 16px 50px; /* Reduced padding */
+    border-radius: 12px; /* Reduced radius */
     color: #1f2937;
     outline: none;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -435,46 +371,46 @@ body, html {
 #address-input:focus {
     background-color: #fff;
     border-color: #00a651;
-    box-shadow: 0 0 0 6px rgba(0, 166, 81, 0.15); /* Bigger focus ring */
+    box-shadow: 0 0 0 4px rgba(0, 166, 81, 0.15); /* Smaller focus ring */
 }
 
 #check-btn {
     background-color: #00a651; 
     color: white;
     border: none;
-    padding: 0 45px; /* Wider button */
-    font-size: 1.2rem; 
+    padding: 0 35px; /* Reduced padding */
+    font-size: 1.1rem; /* Smaller font */
     font-weight: 700;
-    border-radius: 16px;
+    border-radius: 12px; /* Reduced radius */
     cursor: pointer;
     white-space: nowrap;
     transition: all 0.2s;
-    box-shadow: 0 10px 20px rgba(0, 166, 81, 0.2);
+    box-shadow: 0 8px 16px rgba(0, 166, 81, 0.2); /* Smaller shadow */
 }
 
 #check-btn:hover {
     background-color: #008c44;
-    transform: translateY(-3px);
-    box-shadow: 0 15px 30px rgba(0, 166, 81, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(0, 166, 81, 0.3);
 }
 
 /* --- Business Inquiry Section --- */
 .business-inquiry {
-    margin-top: 45px;
-    padding-top: 30px;
+    margin-top: 35px; /* Reduced margin */
+    padding-top: 25px; /* Reduced padding */
     border-top: 1px dashed #e5e7eb;
     color: #6b7280;
 }
 
 .business-inquiry p {
-    font-size: 1rem;
+    font-size: 0.95rem; /* Smaller font */
     margin-bottom: 0;
-    line-height: 1.5;
+    line-height: 1.4;
 }
 
 .business-inquiry i {
     color: #9ca3af;
-    margin-right: 8px;
+    margin-right: 6px;
 }
 
 .business-inquiry a {
@@ -499,38 +435,37 @@ body, html {
 }
 
 /* Update Unavailable Animation Colors */
-.card.unavailable .anim-icon.home { color: #dc2626; }
-.card.unavailable .anim-signal { background: linear-gradient(90deg, transparent, #dc2626); }
-.card.unavailable .anim-wifi-spout { color: #dc2626; } /* Optional: keep it or hide it */
-
 .card.unavailable #check-btn { 
     background-color: #dc2626; 
-    box-shadow: 0 10px 20px rgba(220, 38, 38, 0.2);
+    box-shadow: 0 8px 16px rgba(220, 38, 38, 0.2);
 }
 .card.unavailable #check-btn:hover {
     background-color: #b91c1c;
-    box-shadow: 0 15px 30px rgba(220, 38, 38, 0.3);
+    box-shadow: 0 12px 24px rgba(220, 38, 38, 0.3);
 }
 
 /* --- Footer --- */
 .footer-container {
     background-color: #ffffff;
     border-top: 1px solid #e5e7eb;
-    padding: 40px 20px;
+    padding: 30px 20px; /* Reduced padding */
     text-align: center;
+    position: relative;
+    z-index: 900; /* Footer is below ribbon (1000) */
+    /* No shadow here, ribbon casts shadow ONTO footer */
 }
 
 .footer-container p {
-    margin: 10px 0;
+    margin: 8px 0;
     color: #9ca3af;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 
 .footer-container a {
     color: #6b7280;
     text-decoration: none;
     font-weight: 500;
-    margin: 0 15px;
+    margin: 0 12px;
     transition: color 0.2s;
 }
 
@@ -542,9 +477,9 @@ body, html {
 .hidden { display: none !important; }
 
 #result-container {
-    margin-top: 50px;
+    margin-top: 40px;
     animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    padding-top: 40px;
+    padding-top: 30px;
     border-top: 1px dashed #e5e7eb;
 }
 
@@ -554,29 +489,29 @@ body, html {
 }
 
 #result-icon-wrapper {
-    font-size: 4rem; 
-    margin-bottom: 20px;
+    font-size: 3.5rem; /* Smaller icon */
+    margin-bottom: 15px;
 }
 
 #result-status {
-    font-size: 2.2rem; 
-    margin-bottom: 15px;
+    font-size: 2rem; /* Smaller font */
+    margin-bottom: 10px;
     font-weight: 800;
 }
 
 #result-detail {
-    font-size: 1.2rem; 
+    font-size: 1.1rem; /* Smaller font */
 }
 
 #reset-btn {
-    margin-top: 30px;
+    margin-top: 25px;
     background: white;
     border: 2px solid #e5e7eb;
     color: #4b5563;
-    padding: 15px 35px;
-    font-size: 1.1rem;
+    padding: 12px 30px; /* Reduced padding */
+    font-size: 1rem; /* Smaller font */
     font-weight: 600;
-    border-radius: 12px;
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s;
 }
@@ -598,42 +533,42 @@ body, html {
     overflow: hidden; /* rounded corners fix */
 }
 .pac-item {
-    padding: 15px 20px;
-    font-size: 1.05rem;
+    padding: 12px 20px; /* Reduced padding */
+    font-size: 1rem; /* Smaller font */
     cursor: pointer;
     border-top: 1px solid #f9fafb;
 }
 .pac-item:hover { background-color: #f0fdf4; }
-.pac-item-query { font-size: 1.1rem; color: #111827; font-weight: 600; }
+.pac-item-query { font-size: 1rem; color: #111827; font-weight: 600; }
 
 /* --- Mobile Responsiveness --- */
 @media (max-width: 900px) {
-    .card h1 { font-size: 2.8rem; }
+    .card h1 { font-size: 2.4rem; } /* Adjusted font size */
 }
 
 @media (max-width: 768px) {
     .main-wrapper {
-        padding: 30px 15px; /* Less padding on mobile edges */
+        padding: 25px 15px; /* Less padding on mobile edges */
     }
 
     .card {
-        padding: 40px 25px; /* Tighter internal padding */
+        padding: 30px 20px; /* Tighter internal padding */
     }
 
     .card h1 {
-        font-size: 2.2rem; /* Readable but big */
+        font-size: 2rem; /* Readable but big */
         margin-bottom: 15px;
     }
     
     .card p {
-        font-size: 1.1rem;
-        margin-bottom: 30px;
+        font-size: 1rem;
+        margin-bottom: 25px;
     }
 
     .search-container {
         flex-direction: column;
-        gap: 15px;
-        padding: 15px; /* Adjust padding on mobile */
+        gap: 12px;
+        padding: 12px; /* Adjust padding on mobile */
     }
     
     .input-group {
@@ -641,14 +576,14 @@ body, html {
     }
 
     #address-input {
-        font-size: 1.1rem;
-        padding: 16px 20px 16px 50px; /* Slightly smaller */
+        font-size: 1rem;
+        padding: 14px 20px 14px 45px; /* Slightly smaller */
     }
     
     #check-btn {
         width: 100%;
-        padding: 18px; /* Tall touch target */
-        font-size: 1.1rem;
+        padding: 16px; /* Tall touch target */
+        font-size: 1rem;
     }
     
     /* Make autocomplete nice on mobile */
@@ -656,17 +591,5 @@ body, html {
         width: 100% !important;
         left: 0 !important;
         position: absolute !important;
-    }
-    
-    /* Adjust Animation for Mobile */
-    .connection-anim-wrapper {
-        gap: 10px;
-    }
-    .anim-icon {
-        font-size: 2rem;
-    }
-    .anim-wifi-spout {
-        font-size: 1.5rem;
-        top: -30px;
     }
 }
