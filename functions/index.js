@@ -108,7 +108,7 @@ exports.createOrderSecure = onRequest((req, res) => {
                         <p><strong>Phone:</strong> ${data.orderDetails.phone}</p>
                         <p><strong>Email:</strong> ${data.orderDetails.email}</p>
                         <p><strong>Address:</strong> ${data.orderDetails.address}</p>
-                        <p><strong>Plan:</strong> ${data.orderDetails.plan}</p>
+                        <p><strong>Plan:</strong> ${data.orderDetails.planDetails || data.orderDetails.plan}</p>
                         <hr>
                         <p><em>Verified via ReCAPTCHA</em></p>
                     `

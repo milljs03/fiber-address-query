@@ -116,12 +116,37 @@ async function handleOrderSubmit(e) {
     e.preventDefault();
     const btn = document.getElementById('submit-btn');
     
+    // --- PREPARE PLAN DETAILS FOR EMAIL ---
+    const planKey = document.getElementById('selected-plan').value;
+    const planData = PLAN_DATA[planKey] || {};
+    
+    let planDetails = planKey;
+    const extraDetails = [];
+
+    // Add stickers/perks
+    if (planData.stickers) {
+        extraDetails.push(planData.stickers);
+    }
+
+    // Add price (Use promo price if available)
+    const effectivePrice = planData.promoPrice || planData.price;
+    if (effectivePrice) {
+        extraDetails.push(`${effectivePrice}/mo`);
+    }
+
+    // Combine into "Plan - Sticker, Sticker, Price"
+    if (extraDetails.length > 0) {
+        planDetails += ` - ${extraDetails.join(', ')}`;
+    }
+    // -------------------------------------
+
     const orderDetails = {
         name: document.getElementById('name').value,
         email: document.getElementById('email').value,
         phone: document.getElementById('phone').value,
         address: document.getElementById('address').value,
-        plan: document.getElementById('selected-plan').value,
+        plan: planKey,           // Original concise plan name for analytics
+        planDetails: planDetails, // Detailed string for email notification
         uid: auth.currentUser ? auth.currentUser.uid : 'anon'
     };
 
