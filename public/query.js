@@ -22,6 +22,7 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'nptel-map-portal';
 // State
 let map;
 let allPolygons = [];
+let autocomplete; // Made global so button can access if needed
 
 // --- SESSION HELPER ---
 function getSessionId() {
@@ -82,17 +83,23 @@ function setupAutocomplete() {
     const input = document.getElementById('address-input');
     if (!input) return;
 
-    const autocomplete = new google.maps.places.Autocomplete(input);
+    autocomplete = new google.maps.places.Autocomplete(input);
     if (map) autocomplete.bindTo('bounds', map);
 
     autocomplete.addListener('place_changed', () => {
-       const place = autocomplete.getPlace();
-if (!place.geometry) {
-    // User entered the name of a Place that was not suggested and
-    // pressed the Enter key, or the Place Details request failed.
-    alert("Please select an address from the dropdown list.");
-    return;
-}
+        const place = autocomplete.getPlace();
+        
+        if (!place.geometry) {
+            // User entered the name of a Place that was not suggested and
+            // pressed the Enter key, or the Place Details request failed.
+            // We do NOT return here anymore; we fall through to let them try the button
+            // or show a specific alert if they rely purely on dropdown.
+            // For now, let's keep the alert but allow the button to handle the raw text.
+            return;
+        }
+        
+        // FIX: This call was missing in your previous code!
+        evaluateLocation(place);
     });
 }
 
@@ -103,7 +110,27 @@ function setupButtons() {
     
     if(checkBtn && input) {
         checkBtn.addEventListener('click', () => {
-            input.focus(); 
+            const address = input.value;
+            if (!address) {
+                input.focus();
+                return;
+            }
+
+            // FIX: If user clicks button, we manually geocode what they typed
+            // This handles cases where they paste an address and don't select from dropdown
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ 'address': address }, function(results, status) {
+                if (status === 'OK' && results[0]) {
+                    // Create a "place-like" object to pass to evaluateLocation
+                    const place = {
+                        geometry: results[0].geometry,
+                        formatted_address: results[0].formatted_address
+                    };
+                    evaluateLocation(place);
+                } else {
+                    alert('Geocode was not successful for the following reason: ' + status);
+                }
+            });
         });
     }
 
@@ -113,8 +140,10 @@ function setupButtons() {
 }
 
 function evaluateLocation(place) {
+    if (!place || !place.geometry) return;
+
     const point = place.geometry.location;
-    const address = place.formatted_address;
+    const address = place.formatted_address || document.getElementById('address-input').value;
     
     // 1. Check Geometry & Campaign
     let isInside = false;
