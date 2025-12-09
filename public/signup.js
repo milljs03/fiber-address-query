@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
 // --- CONFIGURATION ---
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
@@ -14,10 +13,13 @@ const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__f
     measurementId: "G-4Z1285PTRT"
 };
 
+// --- SETTINGS ---
+// This is the URL of your deployed Cloud Function
+const FUNCTION_URL = "https://us-central1-fiber-service-query.cloudfunctions.net/createOrderSecure";
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const functions = getFunctions(app); // Initialize Cloud Functions
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'nptel-map-portal';
 
 let PLAN_DATA = {
@@ -27,7 +29,14 @@ let PLAN_DATA = {
 };
 
 // --- AUTH ---
-async function initAuth() { try { await signInAnonymously(auth); } catch (e) { console.warn(e); } }
+// IMPORTANT: You MUST enable "Anonymous" sign-in in Firebase Console -> Authentication
+async function initAuth() { 
+    try { 
+        await signInAnonymously(auth); 
+    } catch (e) { 
+        console.warn("Auth Warning (Enable Anonymous Auth in Console):", e.message); 
+    } 
+}
 initAuth();
 
 // --- LOGIC ---
@@ -43,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (defaultDoc.exists() && defaultDoc.data().plans) PLAN_DATA = defaultDoc.data().plans;
     } catch (e) { console.error("Error loading defaults:", e); }
 
-    // 2. Load Campaign Overrides if present
+    // 2. Load Campaign Overrides
     if (campaignId) {
         try {
             const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', campaignId));
@@ -51,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) { console.error("Error loading campaign:", e); }
     }
 
-    // 3. Populate Form Fields
+    // 3. Populate Fields
     if (address) document.getElementById('address').value = decodeURIComponent(address);
     
     if (planKey) {
@@ -78,18 +87,12 @@ function renderPlanSummary(planKey) {
     const popularClass = isPopular ? 'popular' : '';
     const popularBadge = isPopular ? '<div class="popular-badge">Most Popular</div>' : '';
 
-    // -- PROMO LOGIC FOR SUMMARY --
     const hasPromo = !!plan.promoPrice;
-    let priceHtml = '';
-    if (hasPromo) {
-        priceHtml = `
-            <div style="text-decoration: line-through; color: #999; font-size: 1.2rem;">${plan.price}</div>
-            <span class="price" style="color: #dc2626;">${plan.promoPrice}<small>/mo</small></span>
-            <div style="font-weight: bold; color: #dc2626; margin-bottom: 10px;">${plan.promoLabel || 'Special Offer'}</div>
-        `;
-    } else {
-        priceHtml = `<span class="price">${plan.price}<small>/mo</small></span>`;
-    }
+    let priceHtml = hasPromo ? 
+        `<div style="text-decoration: line-through; color: #999; font-size: 1.2rem;">${plan.price}</div>
+         <span class="price" style="color: #dc2626;">${plan.promoPrice}<small>/mo</small></span>
+         <div style="font-weight: bold; color: #dc2626; margin-bottom: 10px;">${plan.promoLabel || 'Special Offer'}</div>` : 
+        `<span class="price">${plan.price}<small>/mo</small></span>`;
 
     const html = `
         <div class="pricing-box ${popularClass}" style="max-width: 100%;">
@@ -113,7 +116,6 @@ async function handleOrderSubmit(e) {
     e.preventDefault();
     const btn = document.getElementById('submit-btn');
     
-    // Get Form Data
     const orderDetails = {
         name: document.getElementById('name').value,
         email: document.getElementById('email').value,
@@ -123,7 +125,6 @@ async function handleOrderSubmit(e) {
         uid: auth.currentUser ? auth.currentUser.uid : 'anon'
     };
 
-    // Verify ReCAPTCHA Client-Side Presence
     if (typeof grecaptcha === 'undefined') {
         alert("Security check failed to load. Please refresh the page.");
         return;
@@ -139,23 +140,24 @@ async function handleOrderSubmit(e) {
     btn.textContent = "Securing Order...";
 
     try {
-        // --- SECURE SUBMISSION via CLOUD FUNCTION ---
-        // This replaces the direct database write. The server verifies the captcha
-        // and sends the email, so no API keys or email scripts are exposed.
-        const createOrder = httpsCallable(functions, 'createOrderSecure');
-        
-        const result = await createOrder({ orderDetails, captchaToken });
+        // --- USE STANDARD FETCH ---
+        const response = await fetch(FUNCTION_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderDetails, captchaToken })
+        });
 
-        if (result.data.success) {
+        const result = await response.json();
+
+        if (response.ok && result.success) {
             alert("Order submitted successfully! We will contact you shortly.");
             window.location.href = 'query.html'; 
+        } else {
+            throw new Error(result.error || "Submission rejected by server.");
         }
     } catch (error) {
         console.error("Order Failed:", error);
-        // Show a user-friendly error
-        alert("Submission failed: " + (error.message || "An unexpected error occurred."));
-        
-        // Reset UI to allow retry
+        alert("Submission failed: " + error.message);
         btn.disabled = false;
         btn.textContent = "Complete Order";
         grecaptcha.reset(); 
