@@ -216,6 +216,34 @@ body, html {
     font-weight: 600;
 }
 
+/* --- NEW: STICKERS STYLES --- */
+.stickers-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 10px 0 20px 0;
+    align-items: center;
+}
+
+.sticker-badge {
+    background-color: #e0f2f1; /* Light Teal/Green */
+    color: #00695c;
+    border: 1px solid #b2dfdb;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.sticker-badge i {
+    color: #00a651;
+}
+/* ------------------------ */
+
 .speed-features {
     font-size: 2rem;
     font-weight: bold;

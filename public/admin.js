@@ -141,14 +141,15 @@ window.togglePromo = function(btn) {
     const section = btn.closest('.plan-row').querySelector('.promo-section');
     if (section.style.display === 'block') {
         section.style.display = 'none';
-        btn.textContent = '+ Add Deal/Promo';
+        btn.textContent = '+ Add Discount Rules';
     } else {
         section.style.display = 'block';
-        btn.textContent = '- Remove Deal';
+        btn.textContent = '- Hide Discount Rules';
     }
 };
 
-function addPlanRow(name='', price='', speed='', isPopular=false, promoPrice='', promoLabel='', promoEnd='') {
+// Updated addPlanRow to include Stickers
+function addPlanRow(name='', price='', speed='', isPopular=false, promoPrice='', promoLabel='', promoEnd='', stickers='') {
     const container = document.getElementById('plans-container');
     const div = document.createElement('div');
     div.className = 'plan-row';
@@ -156,7 +157,7 @@ function addPlanRow(name='', price='', speed='', isPopular=false, promoPrice='',
     // Check if promo data exists to auto-expand
     const hasPromo = promoPrice || promoLabel || promoEnd;
     const promoDisplay = hasPromo ? 'block' : 'none';
-    const promoBtnText = hasPromo ? '- Remove Deal' : '+ Add Deal/Promo';
+    const promoBtnText = hasPromo ? '- Hide Discount Rules' : '+ Add Discount Rules';
 
     div.innerHTML = `
         <div class="form-row" style="margin-bottom: 5px;">
@@ -182,6 +183,16 @@ function addPlanRow(name='', price='', speed='', isPopular=false, promoPrice='',
                 <button type="button" class="btn-remove-row" onclick="this.closest('.plan-row').remove()" title="Remove Tier"><i class="fa-solid fa-trash"></i></button>
             </div>
         </div>
+
+        <!-- Stickers / Perks Row -->
+        <div class="form-row" style="margin-bottom: 10px;">
+             <div class="form-col" style="flex:1;">
+                 <label>Stickers / Perks (comma separated)</label>
+                 <input type="text" class="plan-stickers" placeholder="e.g. Free Install, First Month Free, $200 Gift Card" value="${stickers}">
+                 <small style="color:#666; font-style:italic;">These appear as badges on the pricing card.</small>
+             </div>
+        </div>
+
         <div style="text-align: left; padding-left: 5px;">
             <button type="button" class="promo-toggle-btn" onclick="window.togglePromo(this)">${promoBtnText}</button>
         </div>
@@ -236,6 +247,7 @@ async function handleCampaignSave(e) {
         const planName = row.querySelector('.plan-name').value.trim();
         const planPrice = row.querySelector('.plan-price').value.trim();
         const planSpeed = row.querySelector('.plan-speed').value.trim();
+        const stickers = row.querySelector('.plan-stickers').value.trim(); // Capture stickers
         const isPopular = row.querySelector('.plan-popular').checked;
         
         // Promo fields
@@ -261,6 +273,7 @@ async function handleCampaignSave(e) {
                 price: planPrice, 
                 speed: planSpeed,
                 isPopular: isPopular,
+                stickers: stickers, // Save stickers
                 ...promoData
             };
         }
@@ -320,9 +333,6 @@ window.editCampaign = function(id) {
     const container = document.getElementById('plans-container');
     container.innerHTML = '';
     
-    // Sort logic similar to pricing page if needed, but here we likely rely on insertion order if saved that way
-    // Since we use object, insertion order is generally preserved in modern JS but not guaranteed in all historical contexts.
-    // For now, we iterate.
     if (campaign.plans) {
         Object.entries(campaign.plans).forEach(([name, details]) => {
             addPlanRow(
@@ -332,7 +342,8 @@ window.editCampaign = function(id) {
                 details.isPopular,
                 details.promoPrice || '',
                 details.promoLabel || '',
-                details.promoEnd || ''
+                details.promoEnd || '',
+                details.stickers || '' // Load stickers
             );
         });
     } else {
@@ -383,7 +394,8 @@ window.duplicateCampaign = function(id) {
                 details.isPopular,
                 details.promoPrice || '',
                 details.promoLabel || '',
-                details.promoEnd || ''
+                details.promoEnd || '',
+                details.stickers || ''
             );
         });
     }
@@ -451,7 +463,8 @@ function renderDefaultCard(data, container) {
         for (const [key, details] of Object.entries(data.plans)) {
             const star = details.isPopular ? ' <i class="fa-solid fa-star" style="color:gold;"></i>' : '';
             const promo = details.promoPrice ? ` <span style="color:red; font-size:0.8em;">(Promo: ${details.promoPrice})</span>` : '';
-            plansHtml += `<li><strong>${key}:</strong> ${details.price}${promo} / ${details.speed}${star}</li>`;
+            const stickerCount = details.stickers ? ` <span style="font-size:0.8em; color:blue; border:1px solid blue; padding:1px 3px; border-radius:3px;">+${details.stickers.split(',').length} Perks</span>` : '';
+            plansHtml += `<li><strong>${key}:</strong> ${details.price}${promo} / ${details.speed}${star}${stickerCount}</li>`;
         }
     }
     plansHtml += '</ul>';
@@ -477,7 +490,8 @@ function renderCampaignCard(data, container) {
         for (const [key, details] of Object.entries(data.plans)) {
             const star = details.isPopular ? ' <i class="fa-solid fa-star" style="color:gold;"></i>' : '';
             const promo = details.promoPrice ? ` <span style="color:red; font-size:0.8em;">(Promo: ${details.promoPrice})</span>` : '';
-            plansHtml += `<p><strong>${key}:</strong> ${details.price}${promo} / ${details.speed}${star}</p>`;
+            const stickerCount = details.stickers ? ` <span style="font-size:0.8em; color:blue; border:1px solid blue; padding:1px 3px; border-radius:3px;">+${details.stickers.split(',').length} Perks</span>` : '';
+            plansHtml += `<p><strong>${key}:</strong> ${details.price}${promo} / ${details.speed}${star}${stickerCount}</p>`;
         }
     }
     

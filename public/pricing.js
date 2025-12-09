@@ -20,10 +20,154 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'nptel-map-portal';
 const FALLBACK_PLANS = {
     "Standard": { price: "$65", speed: "200 Mbps" },
     "Advanced": { price: "$80", speed: "500 Mbps" },
-    "Premium": { price: "$89", speed: "1 Gbps", isPopular: true }
+    "Premium": { price: "$89", speed: "1 Gbps", isPopular: true, stickers: "Free Install, WiFi 6 Included" }
 };
 
+// --- STICKER CSS INJECTION ---
+// Updated: Removed body overflow (better fix for header), added strict sizing to stickers
+const stickerStyles = `
+    @import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Inter:wght@400;600;800&display=swap');
+
+    .stickers-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin: 25px 0;
+        justify-content: center;
+        perspective: 1000px;
+    }
+
+    .sticker-perk {
+        position: relative;
+        overflow: hidden;
+        font-family: 'Permanent Marker', cursive;
+        font-size: 20px;
+        padding: 12px 24px;
+        border: 4px solid white;
+        box-shadow: 3px 6px 10px rgba(0,0,0,0.3);
+        transform-origin: center;
+        opacity: 0; /* Start hidden */
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        
+        /* LAYOUT FIXES: Prevent stickers from widening the page */
+        white-space: normal; /* Allow text to wrap if too long */
+        text-align: center;
+        max-width: 100%;
+        box-sizing: border-box; /* Include padding/border in width */
+    }
+
+    .sticker-perk:hover {
+        /* Only transition on hover interaction */
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        transform: scale(1.1) rotate(0deg) !important;
+        z-index: 20;
+    }
+
+    /* --- Sticker Variations --- */
+    
+    .sticker-variant-0 { 
+        background: #facc15; 
+        color: #422006; 
+        border-radius: 4px; 
+    }
+    .sticker-variant-1 { 
+        background: #ec4899; 
+        color: white; 
+        border-radius: 9999px; 
+    }
+    .sticker-variant-2 { 
+        background: #22d3ee; 
+        color: #164e63; 
+        border-radius: 16px; 
+    }
+    .sticker-variant-3 { 
+        background: #34d399; 
+        color: #064e3b; 
+        border-radius: 8px; 
+    }
+    .sticker-variant-4 { 
+        background: #fb923c; 
+        color: #431407; 
+        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    }
+
+    /* Holographic Shimmer Effect */
+    .sticker-shimmer {
+        position: absolute;
+        top: -100%; 
+        left: -100%; 
+        width: 300%; 
+        height: 300%;
+        background: linear-gradient(
+            135deg, 
+            transparent 45%, 
+            rgba(255, 255, 255, 0.8) 50%,
+            rgba(130, 240, 255, 0.7) 52%,
+            rgba(240, 130, 255, 0.7) 54%,
+            rgba(255, 230, 130, 0.7) 56%,
+            transparent 60%
+        );
+        mix-blend-mode: plus-lighter;
+        opacity: 1;
+        pointer-events: none;
+        animation: holo-move 3s infinite linear;
+    }
+
+    .sticker-grain {
+        position: absolute;
+        inset: 0;
+        opacity: 0.12;
+        background-image: radial-gradient(circle, #000 1px, transparent 1px);
+        background-size: 3px 3px;
+        pointer-events: none;
+        mix-blend-mode: multiply;
+    }
+
+    @keyframes holo-move {
+        0% { transform: translate(-50%, -50%); }
+        100% { transform: translate(50%, 50%); }
+    }
+
+    /* FIXED ANIMATION */
+    @keyframes sticker-slap {
+        0% {
+            opacity: 0;
+            /* Start closer (y: -100px) and less huge (scale: 3) to prevent layout glitching */
+            transform: scale(3) translateY(-100px) rotate(var(--start-rot));
+        }
+        60% {
+            opacity: 1;
+            /* Land slightly lower than final position */
+            transform: scale(0.9) translateY(10px) rotate(var(--end-rot));
+        }
+        100% {
+            opacity: 1;
+            /* Settle in place */
+            transform: scale(1) translateY(0) rotate(var(--end-rot));
+        }
+    }
+    
+    .sticker-animate {
+        /* Use 'both' to ensure opacity stays 0 before start and 1 after end */
+        animation: sticker-slap 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+`;
+
+function injectStyles() {
+    if (!document.getElementById('sticker-dynamic-styles')) {
+        const styleSheet = document.createElement("style");
+        styleSheet.id = 'sticker-dynamic-styles';
+        styleSheet.innerText = stickerStyles;
+        document.head.appendChild(styleSheet);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    injectStyles(); // Inject CSS immediately
+
     const params = new URLSearchParams(window.location.search);
     const address = params.get('address');
     const campaignId = params.get('campaign');
@@ -32,7 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (address && addressDisplay) addressDisplay.textContent = address;
 
     let plansToShow = FALLBACK_PLANS;
-    let campaignName = "Standard"; // Default name
+    let campaignName = "Standard"; 
     
     // 1. Load Defaults
     try {
@@ -48,7 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', campaignId));
             if (snap.exists() && snap.data().plans) {
                 plansToShow = snap.data().plans;
-                campaignName = snap.data().name || "Special Offer"; // Capture campaign name for label title
+                campaignName = snap.data().name || "Special Offer";
             }
         } catch (e) { console.error("Error loading campaign:", e); }
     }
@@ -58,6 +202,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function renderPlans(plans, address, campaignId, campaignName) {
     const container = document.querySelector('.pricing-container');
+    if (!container) return; // Guard clause
     container.innerHTML = '';
     
     // Sort logic
@@ -83,7 +228,6 @@ function renderPlans(plans, address, campaignId, campaignName) {
         
         // Define price variables for Label
         const labelMonthlyPrice = hasPromo ? plan.promoPrice : plan.price;
-        const labelRegularPrice = plan.price; 
         
         if (hasPromo) {
             priceHtml = `
@@ -104,6 +248,37 @@ function renderPlans(plans, address, campaignId, campaignName) {
             priceHtml = `<span class="price">${plan.price}<small>/mo</small></span>`;
         }
 
+        // -- STICKERS LOGIC (Updated for Variety) --
+        let stickersHtml = '';
+        if (plan.stickers) {
+            const stickerList = plan.stickers.split(',').map(s => s.trim()).filter(s => s);
+            if (stickerList.length > 0) {
+                stickersHtml = `<div class="stickers-container">`;
+                
+                stickerList.forEach((sticker, sIndex) => {
+                    // Randomize appearance
+                    const rot = (Math.random() * 12) - 6; // -6 to 6 deg tilt
+                    const startRot = rot * 8; // Start wildly rotated
+                    const delay = sIndex * 0.15 + 0.2; // Stagger effect
+                    
+                    // Pick a random variant (0-4) - CIRCLE REMOVED
+                    const variantIdx = Math.floor(Math.random() * 5);
+                    const variantClass = `sticker-variant-${variantIdx}`;
+
+                    stickersHtml += `
+                        <div class="sticker-perk ${variantClass} sticker-animate" 
+                             style="--start-rot: ${startRot}deg; --end-rot: ${rot}deg; animation-delay: ${delay}s; transform: rotate(${rot}deg);">
+                            <div class="sticker-shimmer"></div>
+                            <div class="sticker-grain"></div>
+                            <span>${sticker}</span>
+                        </div>
+                    `;
+                });
+                
+                stickersHtml += `</div>`;
+            }
+        }
+
         const cardHtml = `
             <div class="pricing-box ${popularClass}" data-plan="${key}">
                 ${popularBadge}
@@ -114,6 +289,9 @@ function renderPlans(plans, address, campaignId, campaignName) {
                         ${priceHtml}
                         ${expiryHtml}
                     </div>
+                    
+                    ${stickersHtml}
+
                     <div class="speed-features">${plan.speed}</div>
                     <div class="speed-capability">Download & Upload</div>
                     <div class="core-benefits">
@@ -123,7 +301,7 @@ function renderPlans(plans, address, campaignId, campaignName) {
                     <button class="sign-up-btn">Select Plan</button>
                     
                     <!-- Broadband Facts (Exact Layout Replication) -->
-                    <div class="broadband-label-container" style="border: 3px solid black; font-family: Helvetica, Arial, sans-serif; color: black; background: white; margin-top: 20px;">
+                    <div class="broadband-label-container" style="width: 100%; max-width: 100%; box-sizing: border-box; border: 3px solid black; font-family: Helvetica, Arial, sans-serif; color: black; background: white; margin-top: 20px;">
                         <div class="broadband-facts-wrapper collapsed">
                             <div class="sneak-peek-overlay">
                                 <button class="expand-label-btn"><i class="fa-solid fa-chevron-down"></i> Show Full Details</button>
@@ -216,7 +394,7 @@ function renderPlans(plans, address, campaignId, campaignName) {
                                 <span style="font-weight: bold;">Unlimited</span>
                             </div>
 
-<div class="bbf-footer">
+                            <div class="bbf-footer">
                                 <p style="margin: 5px 0;"><strong>Customer Support</strong></p>
                                 <p style="margin: 3px 0;">Phone: (574) 533-4237</p>
                                 <p style="margin: 3px 0;">Website: Community Fiber Network</p>
