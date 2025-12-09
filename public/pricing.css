@@ -1,9 +1,14 @@
+/* --- UPDATED: Main Layout for Sticky Footer --- */
 body, html {
     margin: 0;
     padding: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f8f9fa;
     color: #333;
+    /* Flex column ensures the footer pushes to the bottom */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* --- Header (Shared) --- */
@@ -65,6 +70,9 @@ body, html {
     max-width: 1400px; 
     margin: 0 auto 60px auto;
     flex-wrap: wrap; 
+    /* Ensures this container takes available space but doesn't stretch weirdly */
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .pricing-box {
@@ -88,6 +96,7 @@ body, html {
     box-shadow: 0 15px 40px rgba(0,0,0,0.15);
 }
 
+/* --- Popular Card Gold Effects --- */
 .pricing-box.popular {
     position: relative;
     background: white; 
@@ -108,8 +117,8 @@ body, html {
     background-size: 200% 100%;
     animation: goldShimmer 5s linear infinite;
     -webkit-mask: 
-       linear-gradient(#fff 0 0) content-box, 
-       linear-gradient(#fff 0 0);
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none; 
@@ -342,7 +351,7 @@ body, html {
 
 .expand-label-btn:hover { background: #333; }
 
-/* Broadband Facts Content Styling */
+/* Broadband Facts Internal Content */
 .bbf-header { border-bottom: 5px solid black; padding: 15px; }
 .bbf-title { font-weight: 900; font-size: 28px; margin: 0; text-transform: uppercase; }
 .bbf-provider { font-weight: bold; margin: 5px 0 0 0; font-size: 16px; }
@@ -352,11 +361,11 @@ body, html {
 .bbf-val { font-weight: bold; text-align: right; max-width: 50%; }
 .bbf-section-title { background-color: #f0f0f0; font-weight: bold; padding: 10px 15px; border-bottom: 1px solid #ccc; text-transform: uppercase; font-size: 13px; }
 
-/* --- UPDATED FOOTER STYLING --- */
+/* Internal Footer inside the Broadband Label */
 .bbf-footer { 
     padding: 15px; 
     font-size: 12px; 
-    text-align: center; /* Center everything */
+    text-align: center; 
     background: #fff; 
 }
 .bbf-footer p { 
@@ -372,6 +381,36 @@ body, html {
     text-decoration: underline;
 }
 
+/* --- NEW: Main Page Footer --- */
+.footer-container {
+    background-color: #ffffff;
+    border-top: 1px solid #e0e0e0;
+    padding: 40px 20px;
+    text-align: center;
+    width: 100%;
+    margin-top: auto; /* Pushes footer to bottom */
+}
+
+.footer-container p {
+    margin: 8px 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.footer-container a {
+    color: #00a651;
+    text-decoration: none;
+    font-weight: 600;
+    margin: 0 10px;
+    transition: color 0.2s ease;
+}
+
+.footer-container a:hover {
+    color: #008c44;
+    text-decoration: underline;
+}
+
+/* --- Responsive --- */
 @media (max-width: 900px) {
     .pricing-container { flex-direction: column; align-items: center; }
     .pricing-box { width: 100%; max-width: 450px; }
