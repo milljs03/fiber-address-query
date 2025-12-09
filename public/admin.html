@@ -3,63 +3,17 @@
   <head>
     <title>NPTEL Admin Portal</title>
     <link rel="stylesheet" href="admin.css">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Suppress favicon 404 error -->
-    <link rel="icon" href="data:,">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" type="image/png" href="/favicon.png">
     <style>
-      /* Inline styles for the new report buttons */
-      .header-actions { display: flex; gap: 10px; align-items: center; }
-      .action-btn.small { font-size: 0.85rem; padding: 5px 10px; background-color: #f8f9fa; border: 1px solid #ced4da; }
-      .action-btn.small:hover { background-color: #e2e6ea; border-color: #adb5bd; }
-
-      /* Campaign Manager Styles */
-      .campaign-layout { display: flex; gap: 30px; height: 100%; padding: 20px; }
-      .campaign-form { flex: 1; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-y: auto; }
-      .campaign-list { flex: 1; overflow-y: auto; }
-      
-      .form-section { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
-      .form-section h3 { margin-top: 0; color: #2c3e50; font-size: 1.1rem; }
-      .form-row { display: flex; gap: 15px; margin-bottom: 15px; align-items: flex-end; }
-      .form-col { flex: 1; }
-      .form-col.narrow { flex: 0 0 50px; }
-      .form-col label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #555; }
-      .form-col input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-      
-      .campaign-card { background: white; padding: 15px; border-radius: 6px; border-left: 5px solid #ccc; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: relative; }
-      .campaign-card h4 { margin: 0 0 5px 0; font-size: 1.1rem; }
-      .campaign-card p { margin: 0; font-size: 0.9rem; color: #666; }
-      .campaign-actions { position: absolute; top: 15px; right: 15px; }
-      .btn-delete-campaign { color: #dc3545; background: none; border: none; cursor: pointer; }
-      .btn-remove-row { color: #dc3545; background: none; border: 1px solid #dc3545; border-radius: 4px; padding: 7px; cursor: pointer; }
-      .btn-remove-row:hover { background: #fee2e2; }
-
-      /* Map Controls Update */
-      #campaign-selector-wrapper { display: none; margin-left: 10px; border-left: 1px solid #ccc; padding-left: 10px; align-items: center; gap: 5px; }
-      #campaign-select { padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
-      
-      #plans-container { margin-bottom: 15px; }
-      .plan-row { background: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #eee; }
-      
-      /* Promo Inputs Styling */
-      .promo-section {
-          margin-top: 10px;
-          padding-top: 10px;
-          border-top: 1px dashed #ccc;
-          background-color: #fff3cd; /* Light yellow to signify "Deal" */
-          padding: 10px;
-          border-radius: 4px;
-          display: none; /* Hidden by default */
-      }
-      .promo-section.active { display: block; }
-      .promo-toggle-btn { 
-          background: none; border: none; color: #007bff; cursor: pointer; font-size: 0.8rem; text-decoration: underline; padding: 0;
-      }
+       /* Local overrides if needed */
+       #campaign-selector-wrapper { display: none; margin-left: 10px; border-left: 1px solid #ccc; padding-left: 10px; align-items: center; gap: 5px; }
+       #campaign-select { padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
     </style>
   </head>
   <body>
 
-    <!-- Login Screen -->
     <div id="login-screen">
       <h1>NPTEL Admin Portal</h1>
       <p>Authorized Personnel Only</p>
@@ -67,10 +21,8 @@
       <div id="auth-message" class="error-msg"></div>
     </div>
 
-    <!-- Main App Container -->
     <div id="app-container">
       
-      <!-- Top Navigation Bar -->
       <nav class="top-nav">
         <div class="nav-left">
             <span class="brand">NPTEL Admin</span>
@@ -86,24 +38,18 @@
         </div>
       </nav>
 
-      <!-- TAB 1: MAP VIEW -->
       <div id="map-view" class="tab-content active">
           <div id="controls">
-            <!-- Map Controls -->
             <button id="import-btn" class="action-btn"><i class="fa-solid fa-file-import"></i> Import</button>
             <input type="file" id="import-input" accept=".json,.kml,.kmz" style="display: none;">
-            
             <button id="export-btn" class="action-btn"><i class="fa-solid fa-file-export"></i> Export</button>
             
-            <!-- Campaign Assignment Control -->
             <div id="campaign-selector-wrapper">
                 <label for="campaign-select" style="font-size: 0.85rem; font-weight: bold;">Assign Campaign:</label>
                 <select id="campaign-select">
                     <option value="">No Campaign (Default)</option>
-                    <!-- Populated by JS -->
                 </select>
             </div>
-
             <div id="admin-instructions">
               <strong>How to Edit:</strong> Click a colored zone to select it.
             </div>
@@ -111,67 +57,60 @@
           <div id="map"></div>
       </div>
 
-      <!-- TAB 2: CAMPAIGN MANAGER -->
       <div id="campaign-view" class="tab-content">
-          <div class="campaign-layout">
-              <!-- Create Form -->
-              <div class="campaign-form">
-                  <h2 style="margin-top:0;">Create/Edit Campaign</h2>
-                  <form id="campaign-form">
-                      <div class="form-section">
-                          <div class="form-row">
-                              <div class="form-col">
-                                  <label>Campaign Name</label>
-                                  <input type="text" id="camp-name" placeholder="e.g. Summer Sale" required>
-                              </div>
-                              <div class="form-col">
-                                  <label>Zone Color</label>
-                                  <input type="color" id="camp-color" value="#ff0000" style="height: 35px; padding: 2px;">
-                              </div>
-                          </div>
-                      </div>
-
-                      <!-- Dynamic Plans Section -->
-                      <div class="form-section">
-                          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                              <h3>Plan Configuration</h3>
-                              <button type="button" id="add-plan-btn" class="action-btn small"><i class="fa-solid fa-plus"></i> Add Plan</button>
-                          </div>
-                          
-                          <div id="plans-container">
-                              <!-- Dynamic Rows will be inserted here -->
-                          </div>
-                      </div>
-
-                      <button type="submit" class="action-btn" style="background-color: #00a651; color: white; border:none; width: 100%; padding: 12px; font-size: 1rem;">Save Campaign</button>
-                  </form>
+          <div class="campaign-dashboard-container">
+              
+              <div class="campaign-view-header">
+                  <div>
+                      <h2>Campaign Management</h2>
+                      <p>Manage pricing zones, special offers, and global defaults.</p>
+                  </div>
+                  <button id="btn-create-campaign" class="action-btn primary large">
+                      <i class="fa-solid fa-plus"></i> New Campaign
+                  </button>
               </div>
 
-              <!-- List -->
-              <div class="campaign-list">
-                  <h2 style="margin-top:0;">Active Campaigns</h2>
-                  <div id="campaigns-container">
-                      <!-- Cards go here -->
-                      <p style="color: #666;">Loading campaigns...</p>
-                  </div>
+              <div id="campaigns-grid" class="campaign-grid">
+                  <div class="loading-state">Loading campaigns...</div>
               </div>
           </div>
       </div>
 
-      <!-- TAB 3: ANALYTICS VIEW -->
       <div id="analytics-view" class="tab-content">
           <div class="dashboard-container">
-              
-              <!-- Stats Cards -->
-              <div class="stats-row">
-                  <!-- Will be populated by JS -->
-                  <div class="stat-card loading">Loading stats...</div>
+              <div class="stats-grid">
+                  <div class="stat-card blue-card">
+                      <div class="icon-box"><i class="fa-solid fa-cart-shopping"></i></div>
+                      <div class="stat-info"><h3 id="stat-total-label">Total Orders</h3><p id="stat-total-val">--</p></div>
+                  </div>
+                  <div class="stat-card orange-card">
+                       <div class="icon-box"><i class="fa-solid fa-clock"></i></div>
+                       <div class="stat-info"><h3>Pending</h3><p id="stat-pending-val">--</p></div>
+                  </div>
+                  <div class="stat-card green-card">
+                      <div class="icon-box"><i class="fa-solid fa-check-circle"></i></div>
+                      <div class="stat-info"><h3>Serviceable</h3><p id="stat-serviceable-val">--</p></div>
+                  </div>
+                  <div class="stat-card purple-card">
+                      <div class="icon-box"><i class="fa-solid fa-bullseye"></i></div>
+                      <div class="stat-info"><h3>Conversion</h3><p id="stat-conversion-val">--%</p></div>
+                  </div>
               </div>
 
-              <!-- Orders Table -->
+              <div class="charts-grid">
+                  <div class="chart-box">
+                      <h4>Plan Distribution</h4>
+                      <div class="chart-wrapper"><canvas id="planChart"></canvas></div>
+                  </div>
+                  <div class="chart-box">
+                      <h4>Address Checks (Availability)</h4>
+                      <div class="chart-wrapper"><canvas id="activityChart"></canvas></div>
+                  </div>
+              </div>
+
               <div class="data-section">
                   <div class="section-header">
-                      <h2>Recent Orders (View Only)</h2>
+                      <h2>Recent Orders</h2>
                       <div class="header-actions">
                           <button id="export-orders-btn" class="action-btn small"><i class="fa-solid fa-file-csv"></i> Export Orders</button>
                           <button id="export-activity-btn" class="action-btn small"><i class="fa-solid fa-list"></i> Export Activity</button>
@@ -189,22 +128,68 @@
                                   <th>Contact</th>
                               </tr>
                           </thead>
-                          <tbody>
-                              <!-- Populated by JS -->
-                          </tbody>
+                          <tbody></tbody>
                       </table>
                   </div>
-                  <!-- Hidden input to hold state if needed for later features, otherwise just visual -->
-                  <div style="display:none;" id="stat-total-orders"></div>
-                  <div style="display:none;" id="stat-pending"></div>
               </div>
-
           </div>
       </div>
 
     </div>
 
-    <!-- 1. BRIDGE SCRIPT -->
+    <div id="campaign-modal" class="modal-overlay">
+        <div class="modal-window">
+            <div class="modal-header">
+                <h2 id="modal-title">Edit Campaign</h2>
+                <button type="button" class="close-modal-btn" id="btn-close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="campaign-form">
+                    
+                    <div class="modal-section">
+                        <h3><i class="fa-solid fa-sliders"></i> General Settings</h3>
+                        <div class="form-row">
+                            <div class="form-col" style="flex: 2;">
+                                <label>Campaign Name</label>
+                                <input type="text" id="camp-name" placeholder="e.g. Summer Sale 2024" required>
+                            </div>
+                            <div class="form-col">
+                                <label>Zone Color (Map)</label>
+                                <div class="color-picker-wrapper">
+                                    <input type="color" id="camp-color" value="#ff0000">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row checkbox-row" id="default-checkbox-container">
+                             <label class="toggle-switch">
+                                <input type="checkbox" id="is-default-pricing">
+                                <span class="slider round"></span>
+                             </label>
+                             <div class="toggle-label">
+                                 <strong>Set as Global Default</strong>
+                                 <small>Apply these prices to all areas without a specific campaign zone.</small>
+                             </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-section">
+                        <div class="section-flex-header">
+                            <h3><i class="fa-solid fa-list-check"></i> Pricing Tiers</h3>
+                            <button type="button" id="add-plan-btn" class="action-btn small primary-text"><i class="fa-solid fa-plus"></i> Add Tier</button>
+                        </div>
+                        <div id="plans-container">
+                            </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="action-btn" id="btn-cancel-modal">Cancel</button>
+                        <button type="submit" class="action-btn primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
       window.isGoogleMapsReady = false;
       window.initMap = function() {
@@ -212,15 +197,9 @@
         window.dispatchEvent(new Event('google-maps-ready'));
       };
     </script>
-
-    <!-- 2. EXTERNAL LIBRARIES -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
-
-    <!-- 3. GOOGLE MAPS API -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBw8z2IL4dN5oldPzRW3a581mkXC7VuXe4&libraries=drawing,geometry,places&callback=initMap" async defer></script>
-    
-    <!-- 4. MAIN LOGIC -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBw8z2IL4dN5oldPzRW3a581mkXC7VuXe4&loading=async&libraries=drawing,geometry,places&callback=initMap" async defer></script>
     <script type="module" src="admin.js"></script>
   </body>
 </html>

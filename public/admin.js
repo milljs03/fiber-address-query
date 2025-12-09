@@ -30,6 +30,10 @@ let editingCampaignId = null;
 let isUserAdmin = false;
 let searchMarker;
 
+// Chart Instances
+let planChartInstance = null;
+let activityChartInstance = null;
+
 // DOM Elements
 const loginScreen = document.getElementById('login-screen');
 const appContainer = document.getElementById('app-container');
@@ -37,6 +41,12 @@ const loginBtn = document.getElementById('login-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const authMessage = document.getElementById('auth-message');
 const userDisplay = document.getElementById('user-display');
+
+// Modal Elements
+const modalOverlay = document.getElementById('campaign-modal');
+const btnCreateCampaign = document.getElementById('btn-create-campaign');
+const btnCloseModal = document.getElementById('btn-close-modal');
+const btnCancelModal = document.getElementById('btn-cancel-modal');
 
 // --- AUTH LOGIC ---
 const initAuth = async () => {
@@ -80,12 +90,11 @@ onAuthStateChanged(auth, (user) => {
         document.getElementById('campaign-form').addEventListener('submit', handleCampaignSave);
         document.getElementById('add-plan-btn').addEventListener('click', () => addPlanRow());
         
-        injectDefaultCheckbox();
-
-        if(document.getElementById('plans-container').children.length === 0) {
-            addPlanRow(); 
-        }
-
+        // Modal Listeners
+        if(btnCreateCampaign) btnCreateCampaign.addEventListener('click', () => openCampaignModal());
+        if(btnCloseModal) btnCloseModal.addEventListener('click', closeCampaignModal);
+        if(btnCancelModal) btnCancelModal.addEventListener('click', closeCampaignModal);
+        
         loadCampaigns(); 
 
         if (window.mapLogicReadyCallback) window.mapLogicReadyCallback(isUserAdmin);
@@ -97,140 +106,145 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- UI HELPERS ---
-function injectDefaultCheckbox() {
-    const formSection = document.querySelector('#campaign-form .form-section:first-child');
-    if (!document.getElementById('is-default-pricing')) {
-        const div = document.createElement('div');
-        div.style.marginTop = "15px";
-        div.style.padding = "10px";
-        div.style.backgroundColor = "#e8f5e9";
-        div.style.borderRadius = "4px";
-        div.innerHTML = `
-            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-                <input type="checkbox" id="is-default-pricing"> 
-                <strong>Save as Global Default Pricing</strong> 
-            </label>
-            <small style="color:#666; display:block; margin-top:5px; margin-left:22px;">
-                If checked, these plans will appear for ALL users who are not in a specific campaign zone. 
-                (Campaign Name & Color will be ignored).
-            </small>
-        `;
-        formSection.appendChild(div);
+// --- MODAL LOGIC ---
+function openCampaignModal(campaignId = null) {
+    editingCampaignId = campaignId;
+    const modalTitle = document.getElementById('modal-title');
+    const plansContainer = document.getElementById('plans-container');
+    const form = document.getElementById('campaign-form');
+    
+    // Clear previous state
+    form.reset();
+    plansContainer.innerHTML = '';
+    
+    if (campaignId) {
+        // Edit Mode
+        let data;
+        if(campaignId === 'global_default') {
+            data = globalDefaultCampaign;
+            modalTitle.textContent = "Edit Global Defaults";
+        } else {
+            data = campaigns.find(c => c.id === campaignId);
+            modalTitle.textContent = "Edit Campaign";
+        }
+        
+        if(data) {
+            document.getElementById('camp-name').value = data.name || '';
+            document.getElementById('camp-color').value = data.color || '#ff0000';
+            document.getElementById('is-default-pricing').checked = (campaignId === 'global_default');
+            
+            if (data.plans) {
+                Object.entries(data.plans).forEach(([name, details]) => {
+                    addPlanRow(name, details.price, details.speed, details.isPopular, details.promoPrice, details.promoLabel, details.promoEnd, details.stickers);
+                });
+            } else {
+                addPlanRow();
+            }
+        }
+    } else {
+        // Create Mode
+        modalTitle.textContent = "New Campaign";
+        editingCampaignId = null;
+        document.getElementById('camp-color').value = '#0066ff'; // Default nice blue
+        addPlanRow();
     }
+    
+    modalOverlay.classList.add('open');
 }
 
-// --- CAMPAIGN MANAGER LOGIC ---
+function closeCampaignModal() {
+    modalOverlay.classList.remove('open');
+}
+
+// --- CAMPAIGN LOGIC ---
 
 window.moveRowUp = function(btn) {
-    const row = btn.closest('.plan-row');
-    if (row.previousElementSibling) {
-        row.parentNode.insertBefore(row, row.previousElementSibling);
-    }
+    const row = btn.closest('.plan-row-card');
+    if (row.previousElementSibling) row.parentNode.insertBefore(row, row.previousElementSibling);
 };
 
 window.moveRowDown = function(btn) {
-    const row = btn.closest('.plan-row');
-    if (row.nextElementSibling) {
-        row.parentNode.insertBefore(row.nextElementSibling, row);
-    }
+    const row = btn.closest('.plan-row-card');
+    if (row.nextElementSibling) row.parentNode.insertBefore(row.nextElementSibling, row);
 };
 
-// Toggle Promo Section visibility
 window.togglePromo = function(btn) {
-    const section = btn.closest('.plan-row').querySelector('.promo-section');
-    if (section.style.display === 'block') {
-        section.style.display = 'none';
-        btn.textContent = '+ Add Discount Rules';
+    const container = btn.closest('.plan-row-card').querySelector('.promo-container');
+    if (container.classList.contains('active')) {
+        container.classList.remove('active');
+        btn.textContent = "+ Add Discount / Promo";
+        btn.style.color = "#fa8c16";
     } else {
-        section.style.display = 'block';
-        btn.textContent = '- Hide Discount Rules';
+        container.classList.add('active');
+        btn.textContent = "- Remove Promo";
+        btn.style.color = "#d4380d";
     }
 };
 
-// Updated addPlanRow to include Stickers
 function addPlanRow(name='', price='', speed='', isPopular=false, promoPrice='', promoLabel='', promoEnd='', stickers='') {
     const container = document.getElementById('plans-container');
     const div = document.createElement('div');
-    div.className = 'plan-row';
+    div.className = 'plan-row-card';
     
-    // Check if promo data exists to auto-expand
     const hasPromo = promoPrice || promoLabel || promoEnd;
-    const promoDisplay = hasPromo ? 'block' : 'none';
-    const promoBtnText = hasPromo ? '- Hide Discount Rules' : '+ Add Discount Rules';
+    const promoClass = hasPromo ? 'active' : '';
+    const promoBtnText = hasPromo ? '- Remove Promo' : '+ Add Discount / Promo';
+    const promoBtnColor = hasPromo ? '#d4380d' : '#fa8c16';
 
     div.innerHTML = `
-        <div class="form-row" style="margin-bottom: 5px;">
-            <div class="form-col">
+        <div class="plan-header-row">
+            <div class="form-col" style="flex:2">
                 <label>Plan Name</label>
                 <input type="text" class="plan-name" placeholder="e.g. Standard" value="${name}" required>
             </div>
-            <div class="form-col">
-                <label>Regular Price</label>
+            <div class="form-col" style="flex:1">
+                <label>Price</label>
                 <input type="text" class="plan-price" placeholder="$65" value="${price}" required>
             </div>
-            <div class="form-col">
+            <div class="form-col" style="flex:1">
                 <label>Speed</label>
                 <input type="text" class="plan-speed" placeholder="200 Mbps" value="${speed}" required>
             </div>
-            <div class="form-col narrow" style="text-align:center;">
-                <label>Popular</label>
-                <input type="radio" name="popular_choice" class="plan-popular" ${isPopular ? 'checked' : ''}>
-            </div>
-            <div class="form-col" style="flex: 0 0 110px; display:flex; gap:5px; align-items:flex-end;">
-                <button type="button" class="action-btn small" onclick="window.moveRowUp(this)" title="Move Up"><i class="fa-solid fa-arrow-up"></i></button>
-                <button type="button" class="action-btn small" onclick="window.moveRowDown(this)" title="Move Down"><i class="fa-solid fa-arrow-down"></i></button>
-                <button type="button" class="btn-remove-row" onclick="this.closest('.plan-row').remove()" title="Remove Tier"><i class="fa-solid fa-trash"></i></button>
+            <div class="plan-tools">
+                <button type="button" class="tool-btn" onclick="window.moveRowUp(this)" title="Move Up"><i class="fa-solid fa-arrow-up"></i></button>
+                <button type="button" class="tool-btn" onclick="window.moveRowDown(this)" title="Move Down"><i class="fa-solid fa-arrow-down"></i></button>
+                <button type="button" class="tool-btn remove" onclick="this.closest('.plan-row-card').remove()" title="Delete"><i class="fa-solid fa-trash"></i></button>
             </div>
         </div>
 
-        <!-- Stickers / Perks Row -->
-        <div class="form-row" style="margin-bottom: 10px;">
-             <div class="form-col" style="flex:1;">
+        <div class="form-row" style="align-items: center;">
+             <div class="form-col" style="flex:3;">
                  <label>Stickers / Perks (comma separated)</label>
-                 <input type="text" class="plan-stickers" placeholder="e.g. Free Install, First Month Free, $200 Gift Card" value="${stickers}">
-                 <small style="color:#666; font-style:italic;">These appear as badges on the pricing card.</small>
+                 <input type="text" class="plan-stickers" placeholder="e.g. Free Install, $50 Gift Card" value="${stickers}">
+             </div>
+             <div class="form-col" style="flex:1; align-items:center;">
+                <label style="cursor:pointer; display:flex; align-items:center; gap:5px; margin-top:15px;">
+                    <input type="radio" name="popular_choice" class="plan-popular" ${isPopular ? 'checked' : ''}>
+                    Most Popular
+                </label>
              </div>
         </div>
 
-        <div style="text-align: left; padding-left: 5px;">
-            <button type="button" class="promo-toggle-btn" onclick="window.togglePromo(this)">${promoBtnText}</button>
-        </div>
-        <div class="promo-section" style="display: ${promoDisplay};">
-            <h4 style="margin:0 0 10px 0; color:#856404; font-size: 0.9rem;">Discount / Promo Settings</h4>
+        <button type="button" class="promo-trigger" style="color:${promoBtnColor}" onclick="window.togglePromo(this)">${promoBtnText}</button>
+        
+        <div class="promo-container ${promoClass}">
             <div class="form-row">
                 <div class="form-col">
-                    <label>Discounted Price</label>
+                    <label>Discount Price</label>
                     <input type="text" class="promo-price" placeholder="$50" value="${promoPrice}">
                 </div>
                 <div class="form-col">
-                    <label>Label text (e.g. Holiday Deal)</label>
-                    <input type="text" class="promo-label" placeholder="Black Friday Deal" value="${promoLabel}">
+                    <label>Promo Label</label>
+                    <input type="text" class="promo-label" placeholder="Black Friday" value="${promoLabel}">
                 </div>
                 <div class="form-col">
-                    <label>Ends On (Optional)</label>
+                    <label>Ends On</label>
                     <input type="date" class="promo-end" value="${promoEnd}">
                 </div>
             </div>
         </div>
     `;
     container.appendChild(div);
-}
-
-function resetForm() {
-    document.getElementById('campaign-form').reset();
-    document.getElementById('plans-container').innerHTML = ''; 
-    addPlanRow(); 
-    editingCampaignId = null;
-    
-    const submitBtn = document.querySelector('#campaign-form button[type="submit"]');
-    if(submitBtn) submitBtn.textContent = "Save Campaign";
-    
-    const cancelBtn = document.getElementById('btn-cancel-edit');
-    if(cancelBtn) cancelBtn.remove();
-    
-    const defaultCheck = document.getElementById('is-default-pricing');
-    if(defaultCheck) defaultCheck.checked = false;
 }
 
 async function handleCampaignSave(e) {
@@ -242,192 +256,61 @@ async function handleCampaignSave(e) {
     const isDefault = document.getElementById('is-default-pricing').checked;
     
     const plans = {};
-    const rows = document.querySelectorAll('.plan-row');
+    const rows = document.querySelectorAll('.plan-row-card');
     rows.forEach(row => {
         const planName = row.querySelector('.plan-name').value.trim();
         const planPrice = row.querySelector('.plan-price').value.trim();
         const planSpeed = row.querySelector('.plan-speed').value.trim();
-        const stickers = row.querySelector('.plan-stickers').value.trim(); // Capture stickers
+        const stickers = row.querySelector('.plan-stickers').value.trim();
         const isPopular = row.querySelector('.plan-popular').checked;
         
-        // Promo fields
-        const promoSection = row.querySelector('.promo-section');
+        const promoContainer = row.querySelector('.promo-container');
         let promoData = {};
         
-        if (promoSection.style.display !== 'none') {
+        if (promoContainer.classList.contains('active')) {
             const pPrice = row.querySelector('.promo-price').value.trim();
             const pLabel = row.querySelector('.promo-label').value.trim();
             const pEnd = row.querySelector('.promo-end').value;
-            
             if (pPrice) {
-                promoData = {
-                    promoPrice: pPrice,
-                    promoLabel: pLabel,
-                    promoEnd: pEnd
-                };
+                promoData = { promoPrice: pPrice, promoLabel: pLabel, promoEnd: pEnd };
             }
         }
         
         if(planName && planPrice && planSpeed) {
-            plans[planName] = { 
-                price: planPrice, 
-                speed: planSpeed,
-                isPopular: isPopular,
-                stickers: stickers, // Save stickers
-                ...promoData
-            };
+            plans[planName] = { price: planPrice, speed: planSpeed, isPopular, stickers, ...promoData };
         }
     });
 
-    if (Object.keys(plans).length === 0) {
-        alert("Please add at least one valid pricing tier.");
-        return;
-    }
+    if (Object.keys(plans).length === 0) { alert("Please add at least one valid pricing tier."); return; }
 
     try {
         const payload = { name, color, plans, updatedAt: new Date() };
-        
         if (isDefault) {
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', 'global_default'), {
-                name: "Global Default",
-                plans: plans,
-                updatedAt: new Date()
+                name: "Global Default", plans: plans, updatedAt: new Date()
             });
             alert('Global Default Pricing Updated!');
         } else if (editingCampaignId && editingCampaignId !== 'global_default') {
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', editingCampaignId), payload, { merge: true });
             alert('Campaign Updated!');
         } else {
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'campaigns'), {
-                ...payload, createdAt: new Date()
-            });
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'campaigns'), { ...payload, createdAt: new Date() });
             alert('Campaign Created Successfully!');
         }
-        
-        resetForm();
-    } catch (err) {
-        console.error("Error saving:", err);
-        alert(`Failed to save: ${err.message}`);
-    }
+        closeCampaignModal();
+    } catch (err) { console.error("Error saving:", err); alert(`Failed to save: ${err.message}`); }
 }
-
-// Populate form
-window.editCampaign = function(id) {
-    let campaign;
-    if (id === 'global_default') {
-        campaign = globalDefaultCampaign;
-    } else {
-        campaign = campaigns.find(c => c.id === id);
-    }
-    
-    if (!campaign) return;
-    
-    editingCampaignId = id;
-    
-    document.getElementById('camp-name').value = campaign.name || '';
-    document.getElementById('camp-color').value = campaign.color || '#ff0000';
-    
-    const defaultCheck = document.getElementById('is-default-pricing');
-    if(defaultCheck) defaultCheck.checked = (id === 'global_default');
-    
-    const container = document.getElementById('plans-container');
-    container.innerHTML = '';
-    
-    if (campaign.plans) {
-        Object.entries(campaign.plans).forEach(([name, details]) => {
-            addPlanRow(
-                name, 
-                details.price, 
-                details.speed, 
-                details.isPopular,
-                details.promoPrice || '',
-                details.promoLabel || '',
-                details.promoEnd || '',
-                details.stickers || '' // Load stickers
-            );
-        });
-    } else {
-        addPlanRow();
-    }
-    
-    const submitBtn = document.querySelector('#campaign-form button[type="submit"]');
-    if(submitBtn) submitBtn.textContent = (id === 'global_default') ? "Update Defaults" : "Update Campaign";
-    
-    if (!document.getElementById('btn-cancel-edit')) {
-        const cancelBtn = document.createElement('button');
-        cancelBtn.id = 'btn-cancel-edit';
-        cancelBtn.type = 'button';
-        cancelBtn.textContent = 'Cancel Edit';
-        cancelBtn.className = 'action-btn';
-        cancelBtn.style.cssText = "background-color: #6c757d; color: white; border:none; width: 100%; padding: 12px; font-size: 1rem; margin-top: 10px;";
-        cancelBtn.onclick = resetForm;
-        submitBtn.parentNode.appendChild(cancelBtn);
-    }
-    
-    document.getElementById('campaign-form').scrollIntoView({ behavior: 'smooth' });
-};
-
-// Duplicate Functionality
-window.duplicateCampaign = function(id) {
-    let campaign;
-    if (id === 'global_default') campaign = globalDefaultCampaign;
-    else campaign = campaigns.find(c => c.id === id);
-    
-    if (!campaign) return;
-    
-    // Populate form but keep as NEW
-    editingCampaignId = null; 
-    
-    document.getElementById('camp-name').value = (campaign.name || 'Campaign') + " (Copy)";
-    document.getElementById('camp-color').value = campaign.color || '#ff0000';
-    document.getElementById('is-default-pricing').checked = false;
-    
-    const container = document.getElementById('plans-container');
-    container.innerHTML = '';
-    
-    if (campaign.plans) {
-        Object.entries(campaign.plans).forEach(([name, details]) => {
-            addPlanRow(
-                name, 
-                details.price, 
-                details.speed, 
-                details.isPopular,
-                details.promoPrice || '',
-                details.promoLabel || '',
-                details.promoEnd || '',
-                details.stickers || ''
-            );
-        });
-    }
-    
-    const submitBtn = document.querySelector('#campaign-form button[type="submit"]');
-    if(submitBtn) submitBtn.textContent = "Save as New Campaign";
-    
-    // Ensure cancel btn exists to clear form
-    if (!document.getElementById('btn-cancel-edit')) {
-        const cancelBtn = document.createElement('button');
-        cancelBtn.id = 'btn-cancel-edit';
-        cancelBtn.type = 'button';
-        cancelBtn.textContent = 'Cancel / Clear Form';
-        cancelBtn.className = 'action-btn';
-        cancelBtn.style.cssText = "background-color: #6c757d; color: white; border:none; width: 100%; padding: 12px; font-size: 1rem; margin-top: 10px;";
-        cancelBtn.onclick = resetForm;
-        submitBtn.parentNode.appendChild(cancelBtn);
-    }
-    
-    document.getElementById('campaign-form').scrollIntoView({ behavior: 'smooth' });
-};
 
 async function loadCampaigns() {
     if (!auth.currentUser) return;
-    
     onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'campaigns'), 
         (snapshot) => {
             campaigns = [];
-            const container = document.getElementById('campaigns-container');
+            const container = document.getElementById('campaigns-grid');
             container.innerHTML = '';
-            const select = document.getElementById('campaign-select');
             
+            // Map selector population
+            const select = document.getElementById('campaign-select');
             while (select.options.length > 1) { select.remove(1); }
 
             snapshot.forEach(doc => {
@@ -436,10 +319,10 @@ async function loadCampaigns() {
                 
                 if (doc.id === 'global_default') {
                     globalDefaultCampaign = data; 
-                    renderDefaultCard(data, container);
+                    renderGridCard(data, container, true);
                 } else {
                     campaigns.push(data);
-                    renderCampaignCard(data, container);
+                    renderGridCard(data, container, false);
                     const opt = document.createElement('option');
                     opt.value = data.id;
                     opt.textContent = data.name;
@@ -452,73 +335,247 @@ async function loadCampaigns() {
     );
 }
 
-function renderDefaultCard(data, container) {
+function renderGridCard(data, container, isDefault) {
     const card = document.createElement('div');
-    card.className = 'campaign-card';
-    card.style.borderLeftColor = '#333';
-    card.style.background = '#f4f6f8';
+    card.className = isDefault ? 'grid-card default-card' : 'grid-card';
     
-    let plansHtml = '<ul>';
-    if (data.plans) {
-        for (const [key, details] of Object.entries(data.plans)) {
-            const star = details.isPopular ? ' <i class="fa-solid fa-star" style="color:gold;"></i>' : '';
-            const promo = details.promoPrice ? ` <span style="color:red; font-size:0.8em;">(Promo: ${details.promoPrice})</span>` : '';
-            const stickerCount = details.stickers ? ` <span style="font-size:0.8em; color:blue; border:1px solid blue; padding:1px 3px; border-radius:3px;">+${details.stickers.split(',').length} Perks</span>` : '';
-            plansHtml += `<li><strong>${key}:</strong> ${details.price}${promo} / ${details.speed}${star}${stickerCount}</li>`;
-        }
-    }
-    plansHtml += '</ul>';
+    // Header
+    const colorDot = isDefault ? '<i class="fa-solid fa-globe"></i> ' : `<span class="color-dot" style="background-color:${data.color}"></span>`;
+    const title = isDefault ? 'Global Defaults' : data.name;
     
-    card.innerHTML = `
-        <div class="campaign-actions">
-            <button class="btn-edit-campaign" onclick="window.duplicateCampaign('global_default')" title="Duplicate" style="color:#28a745; margin-right:10px; border:none; background:none; cursor:pointer;"><i class="fa-solid fa-copy"></i></button>
-            <button class="btn-edit-campaign" onclick="window.editCampaign('global_default')" title="Edit Defaults" style="color:#007bff; border:none; background:none; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
-        </div>
-        <h4 style="color: #333;"><i class="fa-solid fa-globe"></i> Global Default Pricing</h4>
-        <div style="font-size: 0.9rem;">${plansHtml}</div>
-    `;
-    container.insertBefore(card, container.firstChild);
-}
-
-function renderCampaignCard(data, container) {
-    const card = document.createElement('div');
-    card.className = 'campaign-card';
-    card.style.borderLeftColor = data.color || '#ccc';
-    
+    // Body (Plans Summary)
     let plansHtml = '';
     if (data.plans) {
+        plansHtml = '<ul>';
+        let count = 0;
         for (const [key, details] of Object.entries(data.plans)) {
-            const star = details.isPopular ? ' <i class="fa-solid fa-star" style="color:gold;"></i>' : '';
-            const promo = details.promoPrice ? ` <span style="color:red; font-size:0.8em;">(Promo: ${details.promoPrice})</span>` : '';
-            const stickerCount = details.stickers ? ` <span style="font-size:0.8em; color:blue; border:1px solid blue; padding:1px 3px; border-radius:3px;">+${details.stickers.split(',').length} Perks</span>` : '';
-            plansHtml += `<p><strong>${key}:</strong> ${details.price}${promo} / ${details.speed}${star}${stickerCount}</p>`;
+            if(count < 3) { // Show max 3 lines
+                const promo = details.promoPrice ? `<span style="color:#d4380d; font-size:0.85em;">(Promo)</span>` : '';
+                plansHtml += `<li><strong>${key}:</strong> ${details.price} ${promo}</li>`;
+            }
+            count++;
         }
+        if(count > 3) plansHtml += `<li><em>+ ${count - 3} more...</em></li>`;
+        plansHtml += '</ul>';
     }
-    
+
     card.innerHTML = `
-        <div class="campaign-actions">
-            <button class="btn-edit-campaign" onclick="window.duplicateCampaign('${data.id}')" title="Duplicate Campaign" style="color:#28a745; margin-right:10px; border:none; background:none; cursor:pointer;"><i class="fa-solid fa-copy"></i></button>
-            <button class="btn-edit-campaign" onclick="window.editCampaign('${data.id}')" title="Edit Campaign" style="margin-right:10px; color:#007bff; border:none; background:none; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn-delete-campaign" onclick="window.deleteCampaign('${data.id}')" title="Delete Campaign"><i class="fa-solid fa-trash"></i></button>
+        <div class="card-header">
+            <div class="card-title">${colorDot}${title}</div>
+            ${isDefault ? '<small>Default</small>' : ''}
         </div>
-        <h4 style="color: #2c3e50;">${data.name}</h4>
-        <div style="margin-top: 10px; font-size: 0.9rem;">${plansHtml}</div>
+        <div class="card-body">
+            ${plansHtml}
+        </div>
+        <div class="card-actions">
+            <button class="card-btn" onclick="window.duplicateCampaign('${data.id}')" title="Copy"><i class="fa-regular fa-copy"></i></button>
+            <button class="card-btn" onclick="window.openCampaignModal('${data.id}')" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            ${!isDefault ? `<button class="card-btn delete" onclick="window.deleteCampaign('${data.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>` : ''}
+        </div>
     `;
     container.appendChild(card);
 }
 
+// Global functions for inline HTML calls
+window.openCampaignModal = openCampaignModal;
 window.deleteCampaign = async function(id) {
     if(!confirm("Delete this campaign?")) return;
     try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', id)); } catch (e) { console.error(e); }
 };
+window.duplicateCampaign = function(id) {
+    let campaign;
+    if (id === 'global_default') campaign = globalDefaultCampaign;
+    else campaign = campaigns.find(c => c.id === id);
+    if (!campaign) return;
+    
+    openCampaignModal(); // Switch to create mode
+    document.getElementById('camp-name').value = (campaign.name || 'Campaign') + " (Copy)";
+    document.getElementById('camp-color').value = campaign.color || '#ff0000';
+    
+    const container = document.getElementById('plans-container');
+    container.innerHTML = '';
+    if (campaign.plans) {
+        Object.entries(campaign.plans).forEach(([name, details]) => {
+            addPlanRow(name, details.price, details.speed, details.isPopular, details.promoPrice, details.promoLabel, details.promoEnd, details.stickers);
+        });
+    }
+};
 
-// ... (Rest of file: Tabs, Analytics, Map Logic remains unchanged) ...
-function initTabs() { const tabs=document.querySelectorAll('.tab-btn');tabs.forEach(tab=>{tab.addEventListener('click',()=>{document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));tab.classList.add('active');const contentId=tab.dataset.tab;document.getElementById(contentId).classList.add('active');if(contentId==='map-view'&&map)google.maps.event.trigger(map,"resize");});});document.getElementById('refresh-data-btn').addEventListener('click',loadAnalyticsData);}
-async function loadAnalyticsData() {if(!auth.currentUser)return;try{const loadingIndicator=document.querySelector('.stat-card.loading');if(loadingIndicator)loadingIndicator.textContent="Updating...";const ordersSnap=await getDocs(collection(db,'artifacts',appId,'public','data','orders'));const orders=[];const uniqueOrderAddresses=new Set();const planCounts={};let pendingCount=0;ordersSnap.forEach(doc=>{const data=doc.data();data.id=doc.id;orders.push(data);if(data.status==='pending')pendingCount++;if(data.address)uniqueOrderAddresses.add(data.address.trim().toLowerCase());if(data.plan)planCounts[data.plan]=(planCounts[data.plan]||0)+1;});const checksSnap=await getDocs(collection(db,'artifacts',appId,'public','data','service_requests'));const uniqueAvailableAddresses=new Set();const uniqueUnavailableAddresses=new Set();checksSnap.forEach(doc=>{const data=doc.data();if(data.address){const normAddr=data.address.trim().toLowerCase();if(data.isAvailable)uniqueAvailableAddresses.add(normAddr);else uniqueUnavailableAddresses.add(normAddr);}});const totalUniqueChecks=uniqueAvailableAddresses.size+uniqueUnavailableAddresses.size;let unconvertedLeads=0;uniqueAvailableAddresses.forEach(addr=>{if(!uniqueOrderAddresses.has(addr))unconvertedLeads++;});const conversionRate=uniqueAvailableAddresses.size>0?((uniqueOrderAddresses.size/uniqueAvailableAddresses.size)*100).toFixed(1):0;updateDashboardUI({totalOrders:orders.length,pendingCount,totalUniqueChecks,uniqueAvailable:uniqueAvailableAddresses.size,uniqueUnavailable:uniqueUnavailableAddresses.size,unconvertedLeads,conversionRate,planCounts});orders.sort((a,b)=>(b.submittedAt?.seconds||0)-(a.submittedAt?.seconds||0));renderOrdersTable(orders);}catch(e){console.error("Error loading analytics:",e);}}
+// ... [Analytics and Map logic remains identical to previous response] ...
+function initTabs() { 
+    const tabs=document.querySelectorAll('.tab-btn');
+    tabs.forEach(tab=>{
+        tab.addEventListener('click',()=>{
+            document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+            tab.classList.add('active');
+            const contentId=tab.dataset.tab;
+            document.getElementById(contentId).classList.add('active');
+            if(contentId==='map-view'&&map)google.maps.event.trigger(map,"resize");
+        });
+    });
+    document.getElementById('refresh-data-btn').addEventListener('click',loadAnalyticsData);
+}
+
+async function loadAnalyticsData() {
+    if(!auth.currentUser)return;
+    try {
+        const refreshBtn = document.getElementById('refresh-data-btn');
+        if(refreshBtn) refreshBtn.classList.add('fa-spin');
+
+        // Fetch Orders
+        const ordersSnap = await getDocs(collection(db,'artifacts',appId,'public','data','orders'));
+        const orders = [];
+        const uniqueOrderAddresses = new Set();
+        const planCounts = {};
+        let pendingCount = 0;
+
+        ordersSnap.forEach(doc => {
+            const data = doc.data();
+            data.id = doc.id;
+            orders.push(data);
+            
+            if(data.status === 'pending') pendingCount++;
+            if(data.address) uniqueOrderAddresses.add(data.address.trim().toLowerCase());
+            
+            // Normalize plan names for chart
+            let pName = data.plan || 'Unknown';
+            if(pName.includes(' ')) pName = pName.split(' ')[0]; 
+            
+            planCounts[pName] = (planCounts[pName] || 0) + 1;
+        });
+
+        // Fetch Checks
+        const checksSnap = await getDocs(collection(db,'artifacts',appId,'public','data','service_requests'));
+        const uniqueAvailableAddresses = new Set();
+        const uniqueUnavailableAddresses = new Set();
+        
+        checksSnap.forEach(doc => {
+            const data = doc.data();
+            if(data.address){
+                const normAddr = data.address.trim().toLowerCase();
+                if(data.isAvailable) uniqueAvailableAddresses.add(normAddr);
+                else uniqueUnavailableAddresses.add(normAddr);
+            }
+        });
+
+        const totalUniqueChecks = uniqueAvailableAddresses.size + uniqueUnavailableAddresses.size;
+        let unconvertedLeads = 0;
+        uniqueAvailableAddresses.forEach(addr => {
+            if(!uniqueOrderAddresses.has(addr)) unconvertedLeads++;
+        });
+
+        const conversionRate = uniqueAvailableAddresses.size > 0 ? 
+            ((uniqueOrderAddresses.size / uniqueAvailableAddresses.size) * 100).toFixed(1) : 0;
+
+        updateDashboardUI({
+            totalOrders: orders.length,
+            pendingCount,
+            totalUniqueChecks,
+            uniqueAvailable: uniqueAvailableAddresses.size,
+            uniqueUnavailable: uniqueUnavailableAddresses.size,
+            unconvertedLeads,
+            conversionRate,
+            planCounts
+        });
+
+        renderCharts(planCounts, { available: uniqueAvailableAddresses.size, unavailable: uniqueUnavailableAddresses.size });
+
+        orders.sort((a,b) => (b.submittedAt?.seconds || 0) - (a.submittedAt?.seconds || 0));
+        renderOrdersTable(orders);
+
+        if(refreshBtn) refreshBtn.classList.remove('fa-spin');
+
+    } catch(e) { 
+        console.error("Error loading analytics:", e); 
+    }
+}
+
 async function exportOrdersToCSV() { if(!confirm("Download Orders Report?")) return; try { const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'orders')); let csvContent = "data:text/csv;charset=utf-8,"; csvContent += "Date,Name,Email,Phone,Address,Plan,Status\n"; snapshot.forEach(doc => { const data = doc.data(); const date = data.submittedAt && data.submittedAt.toDate ? data.submittedAt.toDate().toLocaleString() : ''; const row = [ `"${date}"`, `"${data.name || ''}"`, `"${data.email || ''}"`, `"${data.phone || ''}"`, `"${data.address || ''}"`, `"${data.plan || ''}"`, `"${data.status || 'pending'}"` ].join(","); csvContent += row + "\n"; }); const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", `orders_report_${new Date().toISOString().split('T')[0]}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); } catch (e) { console.error("Export Error:", e); alert("Failed to export orders."); } }
+
 async function exportActivityToCSV() { if(!confirm("Download Activity Log? (This may take a moment)")) return; try { const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'service_requests')); let csvContent = "data:text/csv;charset=utf-8,"; csvContent += "Date,Address,Service Available,Coordinates\n"; snapshot.forEach(doc => { const data = doc.data(); const date = data.checkedAt && data.checkedAt.toDate ? data.checkedAt.toDate().toLocaleString() : ''; const coords = data.location ? `${data.location.lat}, ${data.location.lng}` : ''; const row = [ `"${date}"`, `"${data.address || ''}"`, `"${data.isAvailable ? 'YES' : 'NO'}"`, `"${coords}"` ].join(","); csvContent += row + "\n"; }); const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", `activity_log_${new Date().toISOString().split('T')[0]}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); } catch (e) { console.error("Export Error:", e); alert("Failed to export activity log."); } }
-function updateDashboardUI(stats) { const container=document.querySelector('.stats-row');if(!container)return;let planStatsHtml='';for(const[planName,count]of Object.entries(stats.planCounts)){planStatsHtml+=`<div style="text-align: center;"><div style="font-weight: bold; color: #333;">${count}</div><div style="font-size: 0.7rem;">${planName}</div></div>`;}container.innerHTML=`<div class="stat-card"><h3>Total Orders</h3><p>${stats.totalOrders}</p><small>Pending: ${stats.pendingCount}</small></div><div class="stat-card"><h3>Unique Checks</h3><p>${stats.totalUniqueChecks}</p><div style="font-size: 0.8rem; color: #666; margin-top: 5px;"><span style="color: #28a745;">${stats.uniqueAvailable} OK</span> | <span style="color: #dc3545;">${stats.uniqueUnavailable} No</span></div></div><div class="stat-card"><h3>Conversion</h3><p>${stats.conversionRate}%</p><small style="color: #e67e22;">${stats.unconvertedLeads} Potential</small></div><div class="stat-card"><h3>Plans</h3><div style="display: flex; gap: 15px; margin-top: 10px; font-size: 0.9rem; overflow-x:auto;">${planStatsHtml||'No data'}</div></div>`;}
-function renderOrdersTable(orders) { const tbody=document.querySelector('#orders-table tbody');tbody.innerHTML='';orders.forEach(order=>{const tr=document.createElement('tr');let dateStr='N/A';if(order.submittedAt&&order.submittedAt.toDate)dateStr=order.submittedAt.toDate().toLocaleDateString();tr.innerHTML=`<td>${dateStr}</td><td>${order.name||'Unknown'}</td><td><strong>${order.plan||'None'}</strong></td><td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${order.address||''}</td><td><div>${order.email||''}</div><small>${order.phone||''}</small></td>`;tbody.appendChild(tr);});}
+
+function updateDashboardUI(stats) {
+    document.getElementById('stat-total-val').textContent = stats.totalOrders;
+    document.getElementById('stat-pending-val').textContent = stats.pendingCount;
+    document.getElementById('stat-serviceable-val').textContent = stats.uniqueAvailable;
+    document.getElementById('stat-conversion-val').textContent = stats.conversionRate + '%';
+}
+
+function renderCharts(planCounts, availabilityStats) {
+    const ctx1 = document.getElementById('planChart').getContext('2d');
+    if (planChartInstance) planChartInstance.destroy();
+
+    const planLabels = Object.keys(planCounts);
+    const planData = Object.values(planCounts);
+
+    planChartInstance = new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+            labels: planLabels,
+            datasets: [{
+                data: planData,
+                backgroundColor: ['#4facfe', '#43e97b', '#a18cd1', '#ff9a9e', '#fbc2eb'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right' }
+            }
+        }
+    });
+
+    const ctx2 = document.getElementById('activityChart').getContext('2d');
+    if (activityChartInstance) activityChartInstance.destroy();
+
+    activityChartInstance = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: ['Serviceable', 'Not Serviceable'],
+            datasets: [{
+                label: 'Addresses Checked',
+                data: [availabilityStats.available, availabilityStats.unavailable],
+                backgroundColor: ['#43e97b', '#ff6b6b'],
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+function renderOrdersTable(orders) { 
+    const tbody=document.querySelector('#orders-table tbody');
+    tbody.innerHTML='';
+    orders.forEach(order=>{
+        const tr=document.createElement('tr');
+        let dateStr='N/A';
+        if(order.submittedAt&&order.submittedAt.toDate) dateStr=order.submittedAt.toDate().toLocaleDateString();
+        tr.innerHTML=`
+            <td>${dateStr}</td>
+            <td>${order.name||'Unknown'}</td>
+            <td><span style="font-weight:600; color:#1e3c72;">${order.plan||'None'}</span></td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${order.address||''}</td>
+            <td>
+                <div>${order.email||''}</div>
+                <small style="color:#888;">${order.phone||''}</small>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// Map Logic (Preserved)
 function initializeMapLogic() {window.mapLogicReadyCallback=(isAdmin)=>{isUserAdmin=isAdmin;loadMapFeatures();};if(typeof window.currentUserIsAdmin!=='undefined')window.mapLogicReadyCallback(window.currentUserIsAdmin);}
 if(window.isGoogleMapsReady)initializeMapLogic();else window.addEventListener('google-maps-ready',initializeMapLogic);
 function loadMapFeatures() {if(map)return;initSearchControl();map=new google.maps.Map(document.getElementById('map'),{center:{lat:41.5006,lng:-85.8305},zoom:14,mapTypeId:'hybrid',disableDefaultUI:!isUserAdmin,zoomControl:true,});loadPolygonsFromDatabase();const campaignSelect=document.getElementById('campaign-select');if(campaignSelect){campaignSelect.addEventListener('change',async(e)=>{if(selectedShape&&selectedShape.firebaseId){const campaignId=e.target.value;selectedShape.campaignId=campaignId;updateShapeColor(selectedShape);try{const docRef=doc(db,'artifacts',appId,'public','data','polygons',selectedShape.firebaseId);await updateDoc(docRef,{campaignId:campaignId});}catch(err){console.error("Error assigning campaign:",err);}}});}if(isUserAdmin){document.getElementById('admin-instructions').style.display='block';drawingManager=new google.maps.drawing.DrawingManager({drawingMode:google.maps.drawing.OverlayType.POLYGON,drawingControl:true,drawingControlOptions:{position:google.maps.ControlPosition.TOP_LEFT,drawingModes:['polygon']},polygonOptions:{fillColor:'#ffff00',fillOpacity:0.5,strokeWeight:2,clickable:true,editable:true,zIndex:1}});drawingManager.setMap(map);google.maps.event.addListener(drawingManager,'overlaycomplete',function(e){if(e.type!==google.maps.drawing.OverlayType.MARKER){drawingManager.setDrawingMode(null);const newShape=e.overlay;newShape.type=e.type;newShape.campaignId="";savePolygonToDatabase(newShape).then(id=>{newShape.firebaseId=id;allShapes.push(newShape);attachPolygonListeners(newShape);});google.maps.event.addListener(newShape,'click',function(){setSelection(newShape);});setSelection(newShape);}});google.maps.event.addListener(map,'click',clearSelection);document.addEventListener('keydown',function(e){if(e.key==="Backspace"||e.key==="Delete")deleteSelectedShape();});}document.getElementById('export-btn').addEventListener('click',exporttoJSON);const importBtn=document.getElementById('import-btn');const importInput=document.getElementById('import-input');if(importBtn&&importInput){importBtn.addEventListener('click',()=>importInput.click());importInput.addEventListener('change',async(e)=>{const file=e.target.files[0];if(!file)return;const filename=file.name.toLowerCase();if(filename.endsWith('.json')||filename.endsWith('.geojson')){const reader=new FileReader();reader.onload=(event)=>{try{const geoJson=JSON.parse(event.target.result);loadPolygonsFromGeoJSON(geoJson);}catch(error){console.error(error);}};reader.readAsText(file);}importInput.value='';});}}
