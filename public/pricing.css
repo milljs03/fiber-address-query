@@ -1,3 +1,7 @@
+* {
+    box-sizing: border-box;
+}
+
 /* --- UPDATED: Main Layout for Sticky Footer --- */
 body, html {
     margin: 0;
@@ -72,7 +76,7 @@ body, html {
     flex-wrap: wrap; 
     /* Ensures this container takes available space but doesn't stretch weirdly */
     width: 100%;
-    box-sizing: border-box;
+    /* box-sizing: border-box; -- Covered by global reset now */
 }
 
 .pricing-box {
