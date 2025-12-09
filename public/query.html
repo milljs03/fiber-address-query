@@ -10,6 +10,27 @@
 </head>
 <body>
 
+    <!-- Celebration Ribbon (Left Sidebar) -->
+    <aside class="celebration-ribbon">
+        <!-- Badge with Logo -->
+        <div class="ribbon-badge">
+            <div class="logo-circle">
+                <img src="logos/gold_nptech.png" alt="NP Tech Logo" class="ribbon-logo">
+            </div>
+            <div class="gold-flare"></div> <!-- Flare Effect -->
+        </div>
+        
+        <div class="ribbon-content">
+            <h2 class="celebration-title">125 Years</h2>
+            <p><strong>NPtech</strong> is celebrating 125 years of delivering outstanding local service to members of our community.</p>
+        </div>
+
+        <div class="ribbon-footer">
+            <i class="fa-solid fa-heart-pulse"></i>
+            <span class="slogan">investing in local communities we call home</span>
+        </div>
+    </aside>
+
     <!-- Header / Logo Section -->
     <header class="site-header">
         <div class="logo-container">
@@ -24,14 +45,40 @@
 
     <!-- Main Content -->
     <main class="main-wrapper">
+        
+        <!-- Animated Connection Graphic (Moved Outside & Labels Removed) -->
+        <div class="connection-anim-wrapper">
+            <div class="anim-icon business">
+                <i class="fa-solid fa-city"></i>
+            </div>
+            <div class="anim-line">
+                <div class="anim-signal"></div>
+            </div>
+            <div class="anim-icon home">
+                <i class="fa-solid fa-house-signal"></i>
+                <div class="anim-wifi-spout">
+                    <i class="fa-solid fa-wifi"></i>
+                </div>
+            </div>
+        </div>
+
         <div id="service-card" class="card">
-            <h1 id="card-title">Can we serve your address?</h1>
-            <p id="card-desc">Check if your address can receive our services! We offer fast and reliable internet to areas within our coverage zone. Please enter your address to verify availability.</p>
+            
+            <h1 id="card-title">Check Availability</h1>
+            <p id="card-desc">See if high-speed fiber is available at your home. <br>Enter your address below to get started instantly.</p>
 
             <!-- Unified Search Bar -->
-            <div class="search-bar-wrapper">
-                <input type="text" id="address-input" placeholder="Start typing your address...">
-                <button id="check-btn">Check Address</button>
+            <div class="search-container">
+                <div class="input-group">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="address-input" placeholder="Start typing your address...">
+                </div>
+                <button id="check-btn">Check Now</button>
+            </div>
+
+            <!-- Business Inquiry Link -->
+            <div class="business-inquiry">
+                <p><i class="fa-solid fa-briefcase"></i> Are you a business? <a href="https://communityfiber.net/cfn-business/" target="_blank">Click here for more information on how to get a quote</a></p>
             </div>
             
             <!-- Result Message (Hidden initially) -->
@@ -43,6 +90,12 @@
             </div>
         </div>
     </main>
+
+    <!-- Footer for Consistency -->
+    <footer class="footer-container">
+        <p>&copy; 2024 NPTech & Community Fiber. All rights reserved.</p>
+        <p><a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+    </footer>
 
     <!-- Hidden Map for Geometry Calculations -->
     <div id="map" style="display: none;"></div>
@@ -62,3 +115,4 @@
     <!-- Main Logic -->
     <script type="module" src="query.js"></script>
 </body>
+</html>
