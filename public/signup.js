@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
 // --- CONFIGURATION ---
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
@@ -13,11 +14,10 @@ const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__f
     measurementId: "G-4Z1285PTRT"
 };
 
-const EMAIL_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbylC4OXreb74IxO0cmfpTHdFKjCJy1_TOiJfi3GRm6UoEdLhVquw8rbMGKb3fJc4xDW/exec"; 
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const functions = getFunctions(app); // Initialize Cloud Functions
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'nptel-map-portal';
 
 let PLAN_DATA = {
@@ -37,18 +37,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const planKey = params.get('plan');
     const campaignId = params.get('campaign');
 
+    // 1. Load Global Defaults
     try {
         const defaultDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', 'global_default'));
         if (defaultDoc.exists() && defaultDoc.data().plans) PLAN_DATA = defaultDoc.data().plans;
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Error loading defaults:", e); }
 
+    // 2. Load Campaign Overrides if present
     if (campaignId) {
         try {
             const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', campaignId));
             if (snap.exists() && snap.data().plans) PLAN_DATA = snap.data().plans;
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Error loading campaign:", e); }
     }
 
+    // 3. Populate Form Fields
     if (address) document.getElementById('address').value = decodeURIComponent(address);
     
     if (planKey) {
@@ -108,57 +111,53 @@ function renderPlanSummary(planKey) {
 
 async function handleOrderSubmit(e) {
     e.preventDefault();
-    const name = document.getElementById('name').value;
-    const email = document.getElementById('email').value;
-    const phone = document.getElementById('phone').value;
-    const address = document.getElementById('address').value;
-    const plan = document.getElementById('selected-plan').value;
     const btn = document.getElementById('submit-btn');
+    
+    // Get Form Data
+    const orderDetails = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        address: document.getElementById('address').value,
+        plan: document.getElementById('selected-plan').value,
+        uid: auth.currentUser ? auth.currentUser.uid : 'anon'
+    };
 
-    if (typeof grecaptcha !== 'undefined' && grecaptcha.getResponse) {
-        if (grecaptcha.getResponse().length === 0) {
-            alert("Please verify that you are not a robot.");
-            return;
-        }
+    // Verify ReCAPTCHA Client-Side Presence
+    if (typeof grecaptcha === 'undefined') {
+        alert("Security check failed to load. Please refresh the page.");
+        return;
+    }
+    
+    const captchaToken = grecaptcha.getResponse();
+    if (captchaToken.length === 0) {
+        alert("Please verify that you are not a robot.");
+        return;
     }
 
     btn.disabled = true;
-    btn.textContent = "Processing...";
+    btn.textContent = "Securing Order...";
 
     try {
-        const userId = auth.currentUser ? auth.currentUser.uid : 'anonymous_order';
-        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), {
-            type: 'new_service_order',
-            name, email, phone, address, plan,
-            submittedAt: new Date(),
-            uid: userId,
-            status: 'pending'
-        });
+        // --- SECURE SUBMISSION via CLOUD FUNCTION ---
+        // This replaces the direct database write. The server verifies the captcha
+        // and sends the email, so no API keys or email scripts are exposed.
+        const createOrder = httpsCallable(functions, 'createOrderSecure');
         
-        // Notify
-        await sendNotificationEmail({ name, email, phone, address, plan, timestamp: new Date() });
+        const result = await createOrder({ orderDetails, captchaToken });
 
-        alert("Order submitted successfully! We will contact you shortly.");
-        window.location.href = 'query.html'; 
+        if (result.data.success) {
+            alert("Order submitted successfully! We will contact you shortly.");
+            window.location.href = 'query.html'; 
+        }
     } catch (error) {
-        console.error("Error submitting order:", error);
-        alert("Error processing order. Please try again.");
+        console.error("Order Failed:", error);
+        // Show a user-friendly error
+        alert("Submission failed: " + (error.message || "An unexpected error occurred."));
+        
+        // Reset UI to allow retry
         btn.disabled = false;
         btn.textContent = "Complete Order";
+        grecaptcha.reset(); 
     }
-}
-
-async function sendNotificationEmail(data) {
-    try {
-        await fetch(EMAIL_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors', 
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-                to: "jmiller@nptel.com", 
-                subject: `New Fiber Sign-Up: ${data.name}`,
-                htmlBody: `<h2>New Service Order</h2><p>Name: ${data.name}</p><p>Plan: ${data.plan}</p><p>Address: ${data.address}</p>`
-            })
-        });
-    } catch (e) { console.error("Failed to send email:", e); }
 }

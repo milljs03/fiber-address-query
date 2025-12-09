@@ -24,7 +24,6 @@ const FALLBACK_PLANS = {
 };
 
 // --- STICKER CSS INJECTION ---
-// Updated: Removed body overflow (better fix for header), added strict sizing to stickers
 const stickerStyles = `
     @import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Inter:wght@400;600;800&display=swap');
 
@@ -165,6 +164,7 @@ function injectStyles() {
     }
 }
 
+// --- MAIN LOGIC (UPDATED TO PREVENT FLASH) ---
 document.addEventListener('DOMContentLoaded', async () => {
     injectStyles(); // Inject CSS immediately
 
@@ -175,28 +175,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addressDisplay = document.getElementById('display-address');
     if (address && addressDisplay) addressDisplay.textContent = address;
 
+    // Start with fallback in memory, BUT DO NOT RENDER YET.
+    // The HTML "Loading available plans..." text stays visible during this wait.
     let plansToShow = FALLBACK_PLANS;
     let campaignName = "Standard"; 
     
-    // 1. Load Defaults
     try {
+        // A. Try to get Global Defaults
         const defaultDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', 'global_default'));
         if (defaultDoc.exists() && defaultDoc.data().plans) {
             plansToShow = defaultDoc.data().plans;
         }
-    } catch (e) { console.error("Error loading defaults:", e); }
 
-    // 2. Load Campaign Override
-    if (campaignId) {
-        try {
+        // B. Try to get Campaign Overrides (Overrides Global)
+        if (campaignId) {
             const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', campaignId));
             if (snap.exists() && snap.data().plans) {
                 plansToShow = snap.data().plans;
                 campaignName = snap.data().name || "Special Offer";
             }
-        } catch (e) { console.error("Error loading campaign:", e); }
+        }
+    } catch (e) {
+        console.error("Error loading data from Firebase, using fallback:", e);
     }
 
+    // ONLY NOW do we render. This replaces "Loading..." with the final content.
     renderPlans(plansToShow, address, campaignId, campaignName);
 });
 
@@ -248,7 +251,7 @@ function renderPlans(plans, address, campaignId, campaignName) {
             priceHtml = `<span class="price">${plan.price}<small>/mo</small></span>`;
         }
 
-        // -- STICKERS LOGIC (Updated for Variety) --
+        // -- STICKERS LOGIC --
         let stickersHtml = '';
         if (plan.stickers) {
             const stickerList = plan.stickers.split(',').map(s => s.trim()).filter(s => s);
@@ -261,7 +264,7 @@ function renderPlans(plans, address, campaignId, campaignName) {
                     const startRot = rot * 8; // Start wildly rotated
                     const delay = sIndex * 0.15 + 0.2; // Stagger effect
                     
-                    // Pick a random variant (0-4) - CIRCLE REMOVED
+                    // Pick a random variant (0-4)
                     const variantIdx = Math.floor(Math.random() * 5);
                     const variantClass = `sticker-variant-${variantIdx}`;
 
@@ -300,7 +303,7 @@ function renderPlans(plans, address, campaignId, campaignName) {
                     </div>
                     <button class="sign-up-btn">Select Plan</button>
                     
-                    <!-- Broadband Facts (Exact Layout Replication) -->
+                    <!-- Broadband Facts -->
                     <div class="broadband-label-container" style="width: 100%; max-width: 100%; box-sizing: border-box; border: 3px solid black; font-family: Helvetica, Arial, sans-serif; color: black; background: white; margin-top: 20px;">
                         <div class="broadband-facts-wrapper collapsed">
                             <div class="sneak-peek-overlay">

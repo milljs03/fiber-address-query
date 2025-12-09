@@ -334,8 +334,8 @@ body, html {
     margin: 0 auto;
     
     /* --- NEW: Highlighting Box --- */
-    background-color: #f0fdf4; /* Light green tint background */
-    border: 1px solid #d1fae5; /* Subtle green border */
+    background-color: #446b50; /* Light green tint background */
+    border: 1px solid #07a152; /* Subtle green border */
     padding: 15px; /* Reduced padding */
     border-radius: 16px; /* Reduced radius */
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.03); /* Inner shadow for depth */
