@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>New Service Order | Front Office</title>
+    <link rel="stylesheet" href="frontoffice.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f0f2f5; overflow-y: auto; padding-bottom: 50px; }
+        .container { max-width: 800px; margin: 40px auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        h1 { margin-bottom: 10px; color: #333; }
+        .subtitle { color: #666; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+        .form-section { margin-bottom: 25px; }
+        .section-title { font-weight: 700; color: #0d6efd; margin-bottom: 15px; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; }
+        .row { display: flex; gap: 20px; margin-bottom: 15px; }
+        .col { flex: 1; }
+        label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; color: #444; }
+        .desc { font-size: 0.8rem; color: #888; margin-bottom: 6px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
+        input:focus { border-color: #0d6efd; outline: none; }
+        .btn-submit { background: #28a745; color: white; border: none; padding: 15px 30px; font-size: 1.1rem; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: bold; }
+        .btn-submit:hover { background: #218838; }
+        .plan-summary { background: #e7f1ff; padding: 15px; border-radius: 6px; border: 1px solid #b6d4fe; margin-bottom: 20px; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="intake-form">
+        <h1>Service Order Questionnaire</h1>
+        <p class="subtitle">Complete this form to create a new profile. <span style="float:right; font-size:0.9rem; color:#0d6efd;" id="prefilled-info"></span></p>
+
+        <div id="plan-details-box" class="plan-summary">
+            <strong>Selected Plan:</strong> <span id="disp-plan-name">--</span><br>
+            <strong>Price:</strong> <span id="disp-plan-price">--</span> | <strong>Speed:</strong> <span id="disp-plan-speed">--</span>
+            <div id="disp-extras" style="margin-top:5px; font-style:italic; color:#666;"></div>
+        </div>
+
+        <form id="so-form">
+            <!-- Customer Info -->
+            <div class="form-section">
+                <div class="section-title">Primary Applicant</div>
+                
+                <div class="row">
+                    <div class="col">
+                        <label>1. Customer Name *</label>
+                        <input type="text" name="custName" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <label>2. Home Address *</label>
+                        <div class="desc">Include Street, City, State, Zip</div>
+                        <input type="text" name="homeAddress" id="homeAddress" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <label>3. Mailing Address</label>
+                        <div class="desc">If different from home address</div>
+                        <input type="text" name="mailAddress">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <label>4. Mobile Phone *</label>
+                        <input type="tel" name="mobile" required>
+                    </div>
+                    <div class="col">
+                        <label>5. Email Address *</label>
+                        <input type="email" name="email" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <label>6. Birthdate</label>
+                        <div class="desc">MM/DD/YYYY</div>
+                        <input type="date" name="dob">
+                    </div>
+                    <div class="col">
+                        <label>7. Last 4 of SSN</label>
+                        <div class="desc">Required if DOB not provided</div>
+                        <input type="text" name="ssn4" maxlength="4" pattern="\d{4}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Joint Applicant -->
+            <div class="form-section" style="background: #f9f9f9; padding: 15px; border-radius: 6px;">
+                <div class="section-title">Joint Applicant (Optional)</div>
+                
+                <div class="row">
+                    <div class="col">
+                        <label>8. Name</label>
+                        <input type="text" name="jointName">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label>9. Mobile Phone</label>
+                        <input type="tel" name="jointMobile">
+                    </div>
+                    <div class="col">
+                        <label>10. Email Address</label>
+                        <input type="email" name="jointEmail">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label>11. Birthdate</label>
+                        <input type="date" name="jointDob">
+                    </div>
+                    <div class="col">
+                        <label>12. Last 4 SSN</label>
+                        <input type="text" name="jointSsn4" maxlength="4">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Info -->
+            <div class="form-section">
+                <div class="section-title">Service Details</div>
+                
+                <div class="row">
+                    <div class="col">
+                        <label>13. Fiber Plan *</label>
+                        <select name="fiberPlan" id="fiberPlan" required>
+                            <option value="Standard">Standard - 200/200</option>
+                            <option value="Advanced">Advanced - 500/500</option>
+                            <option value="Premium">Premium - 1000/1000</option>
+                        </select>
+                    </div>
+                    <div class="col">
+                        <label>14. Site Survey Contact *</label>
+                        <select name="surveyContact" required>
+                            <option value="Applicant">Applicant</option>
+                            <option value="Joint Applicant">Joint Applicant</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit"><i class="fa-solid fa-cloud-arrow-up"></i> Save Profile & Service Order</button>
+        </form>
+    </div>
+
+    <!-- Auth Check Wrapper -->
+    <div id="auth-cover" style="position:fixed; inset:0; background:white; z-index:9999; display:flex; align-items:center; justify-content:center;">
+        <p>Verifying Employee Access...</p>
+    </div>
+
+    <script type="module" src="officesignup.js"></script>
+</body>
+</html>
