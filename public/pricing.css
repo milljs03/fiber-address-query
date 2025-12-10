@@ -16,25 +16,34 @@ body, html {
 }
 
 /* --- Header (Shared) --- */
+/* --- Header --- */
 .site-header {
     background-color: #ffffff;
-    padding: 20px 50px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    /* CHANGED: Left padding set specifically to 45px */
+    padding: 15px 45px; 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+    height: 80px; 
     display: flex;
     align-items: center;
-    justify-content: center;
+    position: relative;
+    z-index: 1100; /* Header stays ON TOP of ribbon */
+    width: 100%;
 }
 
 .logo-container {
     width: 100%;
-    max-width: 1400px;
+    /* CHANGED: Removed max-width restriction so it doesn't center */
+    max-width: 100%; 
+    /* CHANGED: Removed auto margin to stop centering */
+    margin: 0; 
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start; 
     align-items: center;
+    gap: 50px; 
 }
 
 .logo-img {
-    max-height: 50px;
+    max-height: 45px; 
     width: auto;
     display: block;
 }

@@ -45,53 +45,28 @@ const stickerStyles = `
         border: 4px solid white;
         box-shadow: 3px 6px 10px rgba(0,0,0,0.3);
         transform-origin: center;
-        opacity: 0; /* Start hidden */
+        opacity: 0; 
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        
-        /* LAYOUT FIXES: Prevent stickers from widening the page */
-        white-space: normal; /* Allow text to wrap if too long */
+        white-space: normal; 
         text-align: center;
         max-width: 100%;
-        box-sizing: border-box; /* Include padding/border in width */
+        box-sizing: border-box; 
     }
 
     .sticker-perk:hover {
-        /* Only transition on hover interaction */
         transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
         transform: scale(1.1) rotate(0deg) !important;
         z-index: 20;
     }
 
-    /* --- Sticker Variations --- */
-    
-    .sticker-variant-0 { 
-        background: #facc15; 
-        color: #422006; 
-        border-radius: 4px; 
-    }
-    .sticker-variant-1 { 
-        background: #ec4899; 
-        color: white; 
-        border-radius: 9999px; 
-    }
-    .sticker-variant-2 { 
-        background: #22d3ee; 
-        color: #164e63; 
-        border-radius: 16px; 
-    }
-    .sticker-variant-3 { 
-        background: #34d399; 
-        color: #064e3b; 
-        border-radius: 8px; 
-    }
-    .sticker-variant-4 { 
-        background: #fb923c; 
-        color: #431407; 
-        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-    }
+    .sticker-variant-0 { background: #facc15; color: #422006; border-radius: 4px; }
+    .sticker-variant-1 { background: #ec4899; color: white; border-radius: 9999px; }
+    .sticker-variant-2 { background: #22d3ee; color: #164e63; border-radius: 16px; }
+    .sticker-variant-3 { background: #34d399; color: #064e3b; border-radius: 8px; }
+    .sticker-variant-4 { background: #fb923c; color: #431407; border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; }
 
     /* Holographic Shimmer Effect */
     .sticker-shimmer {
@@ -112,7 +87,9 @@ const stickerStyles = `
         mix-blend-mode: plus-lighter;
         opacity: 1;
         pointer-events: none;
-        animation: holo-move 3s infinite linear;
+        
+        /* UPDATED: Runs for 6 seconds (slower loop), but the movement is condensed in keyframes */
+        animation: holo-move 6s infinite linear;
     }
 
     .sticker-grain {
@@ -125,32 +102,29 @@ const stickerStyles = `
         mix-blend-mode: multiply;
     }
 
+    /* UPDATED ANIMATION KEYFRAMES */
     @keyframes holo-move {
         0% { transform: translate(-50%, -50%); }
-        100% { transform: translate(50%, 50%); }
+        35% { transform: translate(50%, 50%); } /* Finish the move quickly */
+        100% { transform: translate(50%, 50%); } /* Wait here for the rest of the 6s */
     }
 
-    /* FIXED ANIMATION */
     @keyframes sticker-slap {
         0% {
             opacity: 0;
-            /* Start closer (y: -100px) and less huge (scale: 3) to prevent layout glitching */
             transform: scale(3) translateY(-100px) rotate(var(--start-rot));
         }
         60% {
             opacity: 1;
-            /* Land slightly lower than final position */
             transform: scale(0.9) translateY(10px) rotate(var(--end-rot));
         }
         100% {
             opacity: 1;
-            /* Settle in place */
             transform: scale(1) translateY(0) rotate(var(--end-rot));
         }
     }
     
     .sticker-animate {
-        /* Use 'both' to ensure opacity stays 0 before start and 1 after end */
         animation: sticker-slap 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
     }
 `;
@@ -164,9 +138,9 @@ function injectStyles() {
     }
 }
 
-// --- MAIN LOGIC (UPDATED TO PREVENT FLASH) ---
+// --- MAIN LOGIC ---
 document.addEventListener('DOMContentLoaded', async () => {
-    injectStyles(); // Inject CSS immediately
+    injectStyles(); 
 
     const params = new URLSearchParams(window.location.search);
     const address = params.get('address');
@@ -175,19 +149,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addressDisplay = document.getElementById('display-address');
     if (address && addressDisplay) addressDisplay.textContent = address;
 
-    // Start with fallback in memory, BUT DO NOT RENDER YET.
-    // The HTML "Loading available plans..." text stays visible during this wait.
     let plansToShow = FALLBACK_PLANS;
     let campaignName = "Standard"; 
     
     try {
-        // A. Try to get Global Defaults
         const defaultDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', 'global_default'));
         if (defaultDoc.exists() && defaultDoc.data().plans) {
             plansToShow = defaultDoc.data().plans;
         }
 
-        // B. Try to get Campaign Overrides (Overrides Global)
         if (campaignId) {
             const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', campaignId));
             if (snap.exists() && snap.data().plans) {
@@ -199,16 +169,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("Error loading data from Firebase, using fallback:", e);
     }
 
-    // ONLY NOW do we render. This replaces "Loading..." with the final content.
     renderPlans(plansToShow, address, campaignId, campaignName);
 });
 
 function renderPlans(plans, address, campaignId, campaignName) {
     const container = document.querySelector('.pricing-container');
-    if (!container) return; // Guard clause
+    if (!container) return; 
     container.innerHTML = '';
     
-    // Sort logic
     const planArray = Object.entries(plans).map(([key, val]) => ({ name: key, ...val }));
     planArray.sort((a, b) => {
         const pA = parseFloat((a.promoPrice || a.price).replace(/[^0-9.]/g, '')) || 0;
@@ -223,13 +191,11 @@ function renderPlans(plans, address, campaignId, campaignName) {
         const popularClass = isPopular ? 'popular' : '';
         const popularBadge = isPopular ? '<div class="popular-badge">Most Popular</div>' : '';
 
-        // -- PROMO LOGIC --
         const hasPromo = !!plan.promoPrice;
         let priceHtml = '';
         let badgeHtml = '';
         let expiryHtml = '';
         
-        // Define price variables for Label
         const labelMonthlyPrice = hasPromo ? plan.promoPrice : plan.price;
         
         if (hasPromo) {
@@ -251,7 +217,6 @@ function renderPlans(plans, address, campaignId, campaignName) {
             priceHtml = `<span class="price">${plan.price}<small>/mo</small></span>`;
         }
 
-        // -- STICKERS LOGIC --
         let stickersHtml = '';
         if (plan.stickers) {
             const stickerList = plan.stickers.split(',').map(s => s.trim()).filter(s => s);
@@ -259,19 +224,19 @@ function renderPlans(plans, address, campaignId, campaignName) {
                 stickersHtml = `<div class="stickers-container">`;
                 
                 stickerList.forEach((sticker, sIndex) => {
-                    // Randomize appearance
-                    const rot = (Math.random() * 12) - 6; // -6 to 6 deg tilt
-                    const startRot = rot * 8; // Start wildly rotated
-                    const delay = sIndex * 0.15 + 0.2; // Stagger effect
-                    
-                    // Pick a random variant (0-4)
+                    const rot = (Math.random() * 12) - 6; 
+                    const startRot = rot * 8; 
+                    const delay = sIndex * 0.15 + 0.2; 
                     const variantIdx = Math.floor(Math.random() * 5);
                     const variantClass = `sticker-variant-${variantIdx}`;
+
+                    // Added a 'randomOffset' so they don't all shimmer exactly at the same time
+                    const shimmerDelay = (Math.random() * 2) + "s";
 
                     stickersHtml += `
                         <div class="sticker-perk ${variantClass} sticker-animate" 
                              style="--start-rot: ${startRot}deg; --end-rot: ${rot}deg; animation-delay: ${delay}s; transform: rotate(${rot}deg);">
-                            <div class="sticker-shimmer"></div>
+                            <div class="sticker-shimmer" style="animation-delay: ${shimmerDelay};"></div>
                             <div class="sticker-grain"></div>
                             <span>${sticker}</span>
                         </div>
@@ -299,11 +264,12 @@ function renderPlans(plans, address, campaignId, campaignName) {
                     <div class="speed-capability">Download & Upload</div>
                     <div class="core-benefits">
                         <span class="highlight-text">Local Service</span>
-                        <span class="highlight-text">Lifetime Price Lock</span>
+                        <span class="highlight-text">Lifetime Price Lock</span>               
+                        <span class="highlight-text">No Contracts</span>
+
                     </div>
                     <button class="sign-up-btn">Select Plan</button>
                     
-                    <!-- Broadband Facts -->
                     <div class="broadband-label-container" style="width: 100%; max-width: 100%; box-sizing: border-box; border: 3px solid black; font-family: Helvetica, Arial, sans-serif; color: black; background: white; margin-top: 20px;">
                         <div class="broadband-facts-wrapper collapsed">
                             <div class="sneak-peek-overlay">

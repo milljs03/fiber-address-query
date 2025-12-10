@@ -15,28 +15,10 @@ body, html {
     flex-direction: column;
 }
 
-
-* {
-    box-sizing: border-box;
-}
-
-body, html {
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    /* Subtle background pattern for professionalism */
-    background-color: #f0fdf4; /* Very light mint tint */
-    background-image: radial-gradient(#dcfce7 1px, transparent 1px);
-    background-size: 24px 24px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
 /* --- Header --- */
 .site-header {
     background-color: #ffffff;
-    /* CHANGED: Left padding set specifically to 45px */
+    /* Fixed: 45px padding from left */
     padding: 15px 45px; 
     box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
     height: 80px; 
@@ -49,13 +31,13 @@ body, html {
 
 .logo-container {
     width: 100%;
-    /* CHANGED: Removed max-width restriction so it doesn't center */
+    /* Fixed: Left alignment with no centering */
     max-width: 100%; 
-    /* CHANGED: Removed auto margin to stop centering */
     margin: 0; 
     display: flex;
     justify-content: flex-start; 
     align-items: center;
+    /* Fixed: Tab-width gap */
     gap: 50px; 
 }
 
@@ -64,13 +46,14 @@ body, html {
     width: auto;
     display: block;
 }
+
 /* --- Celebration Ribbon (Left Sidebar) --- */
 .celebration-ribbon {
     position: absolute; 
     left: 20px; 
     top: 0;
     height: 100%; 
-    /* CHANGED: Add min-height to prevent slogan from sliding under badge on short screens */
+    /* Fixed: Min-height to prevent overlap on small screens */
     min-height: 600px; 
     width: 240px; 
     background: linear-gradient(160deg, #1e3a8a 0%, #2563eb 100%); 
@@ -97,7 +80,7 @@ body, html {
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-shrink: 0; /* Prevent badge from squishing */
+    flex-shrink: 0; 
 }
 
 /* Gold Circle for Logo -> Embossed Coin/Seal Look */
@@ -228,8 +211,8 @@ body, html {
     padding-top: 25px;
     border-top: 1px solid rgba(255,255,255,0.2);
     width: 100%;
-    flex-shrink: 0; /* Prevent footer from shrinking */
-    margin-bottom: 40px;
+    flex-shrink: 0; 
+    margin-bottom: 45px;
 }
 
 .ribbon-footer i {
@@ -315,7 +298,7 @@ body, html {
     margin-right: auto;
 }
 
-/* --- Search Container --- */
+/* --- Search Container (Query Page) --- */
 .search-container {
     display: flex;
     gap: 12px; 
@@ -379,6 +362,80 @@ body, html {
     background-color: #008c44;
     transform: translateY(-2px);
     box-shadow: 0 12px 24px rgba(0, 166, 81, 0.3);
+}
+
+/* --- Lead Form Styles (Sorry Page) --- */
+.contact-form {
+    text-align: left;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 1rem;
+    color: #1f2937;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+    border-color: #00a651;
+    box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.1);
+}
+
+.form-group input:disabled {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+    color: #6b7280;
+}
+
+#submit-lead-btn {
+    width: 100%;
+    background-color: #00a651;
+    color: white;
+    border: none;
+    padding: 15px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 10px;
+    box-shadow: 0 4px 6px rgba(0, 166, 81, 0.2);
+}
+
+#submit-lead-btn:hover:not(:disabled) {
+    background-color: #008c44;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 166, 81, 0.3);
+}
+
+#submit-lead-btn:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.g-recaptcha {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
 }
 
 /* --- Business Inquiry Section --- */

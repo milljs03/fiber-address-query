@@ -22,7 +22,7 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'nptel-map-portal';
 // State
 let map;
 let allPolygons = [];
-let autocomplete; // Made global so button can access if needed
+let autocomplete; 
 
 // --- SESSION HELPER ---
 function getSessionId() {
@@ -51,7 +51,12 @@ function initApp() {
             disableDefaultUI: true
         });
     }
-    loadPolygons();
+    
+    // IMPORTANT: Load polygons FIRST, then check for URL params
+    loadPolygons().then(() => {
+        checkUrlParams(); 
+    });
+
     setupAutocomplete();
     setupButtons();
 }
@@ -66,9 +71,7 @@ async function loadPolygons() {
                     paths: data.coordinates,
                     visible: false
                 });
-                // STORE CAMPAIGN ID ON THE POLYGON OBJECT
                 polygon.campaignId = data.campaignId || null; 
-                
                 polygon.setMap(map); 
                 allPolygons.push(polygon);
             }
@@ -76,6 +79,21 @@ async function loadPolygons() {
         console.log(`Loaded ${allPolygons.length} service zones.`);
     } catch (e) {
         console.error("Error loading polygons.", e);
+    }
+}
+
+// --- NEW FUNCTION: URL CHECKER ---
+function checkUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    const autoAddress = params.get('address');
+    
+    if (autoAddress) {
+        // Pre-fill input
+        const input = document.getElementById('address-input');
+        if(input) input.value = autoAddress;
+        
+        // Run search immediately
+        performGeocodeSearch(autoAddress);
     }
 }
 
@@ -88,17 +106,7 @@ function setupAutocomplete() {
 
     autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
-        
-        if (!place.geometry) {
-            // User entered the name of a Place that was not suggested and
-            // pressed the Enter key, or the Place Details request failed.
-            // We do NOT return here anymore; we fall through to let them try the button
-            // or show a specific alert if they rely purely on dropdown.
-            // For now, let's keep the alert but allow the button to handle the raw text.
-            return;
-        }
-        
-        // FIX: This call was missing in your previous code!
+        if (!place.geometry) return;
         evaluateLocation(place);
     });
 }
@@ -115,28 +123,30 @@ function setupButtons() {
                 input.focus();
                 return;
             }
-
-            // FIX: If user clicks button, we manually geocode what they typed
-            // This handles cases where they paste an address and don't select from dropdown
-            const geocoder = new google.maps.Geocoder();
-            geocoder.geocode({ 'address': address }, function(results, status) {
-                if (status === 'OK' && results[0]) {
-                    // Create a "place-like" object to pass to evaluateLocation
-                    const place = {
-                        geometry: results[0].geometry,
-                        formatted_address: results[0].formatted_address
-                    };
-                    evaluateLocation(place);
-                } else {
-                    alert('Geocode was not successful for the following reason: ' + status);
-                }
-            });
+            performGeocodeSearch(address);
         });
     }
 
     if(resetBtn) {
         resetBtn.addEventListener('click', () => window.location.reload());
     }
+}
+
+// --- HELPER: MANUAL SEARCH ---
+function performGeocodeSearch(addressString) {
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ 'address': addressString }, function(results, status) {
+        if (status === 'OK' && results[0]) {
+            const place = {
+                geometry: results[0].geometry,
+                formatted_address: results[0].formatted_address
+            };
+            evaluateLocation(place);
+        } else {
+            console.warn('Geocode failed: ' + status);
+            // Optionally handle UI feedback here if URL search fails
+        }
+    });
 }
 
 function evaluateLocation(place) {
@@ -153,7 +163,7 @@ function evaluateLocation(place) {
         for (const poly of allPolygons) {
             if (google.maps.geometry.poly.containsLocation(point, poly)) {
                 isInside = true;
-                matchedCampaignId = poly.campaignId; // Capture the campaign ID!
+                matchedCampaignId = poly.campaignId; 
                 break;
             }
         }
@@ -164,7 +174,6 @@ function evaluateLocation(place) {
     // 2. Handle Result
     if (isInside) {
         logRequest(address, point.lat(), point.lng(), true).finally(() => {
-            // PASS CAMPAIGN ID IN URL
             let url = `pricing.html?address=${encodeURIComponent(address)}`;
             if (matchedCampaignId) {
                 url += `&campaign=${encodeURIComponent(matchedCampaignId)}`;

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Address Checker</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Work Sans', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: transparent;
+        }
+
+        .cfn-widget-card {
+            background-color: #ffffff;
+            padding: 40px 30px;
+            border-radius: 16px; 
+            overflow: hidden; 
+            position: relative;
+            max-width: 600px;
+            margin: 10px auto;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+            border: 1px solid #f0f0f0; 
+        }
+
+        /* THE COLOR SPLASH BAR */
+        .cfn-widget-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, #00a651 0%, #4ce0b3 100%);
+            z-index: 1;
+        }
+
+        /* Typography */
+        .cfn-widget-title {
+            margin: 15px 0 15px 0;
+            font-size: 32px;
+            font-weight: 800;
+            color: #111827;
+            letter-spacing: -0.5px;
+            line-height: 1.1;
+        }
+
+        .cfn-widget-subtitle {
+            margin: 0 0 30px 0;
+            font-size: 18px;
+            color: #4b5563;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+        
+        .highlight-text {
+            color: #00a651;
+            font-weight: 600;
+        }
+
+        /* Search Bar Wrapper */
+        .cfn-search-wrapper {
+            position: relative; /* Needed to anchor the icon */
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* The Search Icon SVG */
+        .cfn-search-icon {
+            position: absolute;
+            top: 50%;
+            left: 20px; /* Distance from left edge */
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            color: #9ca3af; /* Gray color to match placeholder */
+            pointer-events: none; /* Allows click to pass through to the input */
+            transition: color 0.3s ease;
+        }
+
+        /* Input Styling */
+        .cfn-search-input {
+            width: 100%;
+            /* 55px Left Padding to make room for the icon */
+            padding: 16px 20px 16px 55px; 
+            border: 2px solid #e5e7eb;
+            border-radius: 50px;
+            font-size: 18px;
+            font-family: 'Work Sans', sans-serif;
+            color: #1f2937;
+            transition: all 0.3s ease;
+            outline: none;
+            box-sizing: border-box;
+            background-color: #f9fafb;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        /* Focus State - Highlight Input and Icon */
+        .cfn-search-input:focus {
+            background-color: #fff;
+            border-color: #00a651;
+            box-shadow: 0 0 0 4px rgba(0, 166, 81, 0.15);
+        }
+        
+        /* Change icon color when input is focused (Optional visual flair) */
+        .cfn-search-input:focus + .cfn-search-icon {
+            color: #00a651; 
+        }
+        
+        .cfn-search-input::placeholder {
+            color: #9ca3af;
+            font-weight: 300;
+        }
+
+        /* Google Autocomplete Styling */
+        .pac-container { 
+            z-index: 10000 !important; 
+            border-radius: 12px;
+            margin-top: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border: none;
+            font-family: 'Work Sans', sans-serif !important; 
+        }
+        
+        .pac-item {
+            padding: 12px 16px;
+            font-size: 15px;
+            cursor: pointer;
+            border-top: 1px solid #f3f4f6;
+            color: #4b5563;
+        }
+        
+        .pac-item:first-child {
+            border-top: none;
+        }
+        
+        .pac-item-query {
+            color: #111827;
+            font-weight: 600;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="cfn-widget-card">
+    <h2 class="cfn-widget-title">Check Your Fiber Availability</h2>
+  
+    <p class="cfn-widget-subtitle">
+        Enter your address to see if <span class="highlight-text">fiber internet</span> is available at your home.
+    </p>
+
+    <div class="cfn-search-wrapper">
+        <input type="text" id="cfn-address-input" class="cfn-search-input" placeholder="Start entering your address.." autocomplete="off">
+        
+        <svg class="cfn-search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        </svg>
+    </div>
+</div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBw8z2IL4dN5oldPzRW3a581mkXC7VuXe4&libraries=places&callback=initCFNWidget" async defer></script>
+
+<script>
+    function initCFNWidget() {
+        var input = document.getElementById('cfn-address-input');
+        
+        var options = {
+            fields: ["formatted_address", "geometry", "name"],
+        };
+
+        var autocomplete = new google.maps.places.Autocomplete(input, options);
+
+        // 1. HANDLE CLICK SELECTION
+        autocomplete.addListener('place_changed', function() {
+            var place = autocomplete.getPlace();
+            if (place.formatted_address) {
+                redirectToApp(place.formatted_address);
+            } else {
+                redirectToApp(input.value);
+            }
+        });
+
+        // 2. HANDLE 'ENTER' KEY
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); 
+                setTimeout(function() {
+                    redirectToApp(input.value);
+                }, 300); 
+            }
+        });
+
+        var isRedirecting = false; 
+        
+        function redirectToApp(address) {
+            if (isRedirecting) return;
+            
+            if(address && address.length > 5) {
+                isRedirecting = true;
+                input.style.borderColor = "#00a651";
+                input.style.backgroundColor = "#f0fdf4";
+                
+                var targetUrl = 'https://fiber-service-query.web.app/query.html?auto=true&address=' + encodeURIComponent(address);
+                window.location.href = targetUrl;
+            }
+        }
+    }
+</script>
+
+</body>
+</html>

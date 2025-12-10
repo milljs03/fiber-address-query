@@ -79,7 +79,7 @@ onAuthStateChanged(auth, (user) => {
         loginScreen.style.display = 'none';
         appContainer.style.display = 'flex'; 
         userDisplay.textContent = user.email;
-        isUserAdmin = (user.email.toLowerCase() === 'jmiller@nptel.com');
+        isUserAdmin = (user.email.toLowerCase() === 'jmiller@nptel.com' || 'ppenrose@nptel.com');
         
         initTabs();
         loadAnalyticsData(); 

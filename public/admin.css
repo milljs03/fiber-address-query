@@ -1,3 +1,8 @@
+/* --- GLOBAL RESET & BOX SIZING (CRITICAL FIX) --- */
+* {
+    box-sizing: border-box;
+}
+
 html, body { 
     height: 100%; 
     margin: 0; 
@@ -35,15 +40,20 @@ html, body {
 #login-btn:hover { transform: translateY(-2px); }
 .error-msg { color: #ff6b6b; margin-top: 15px; font-weight: bold; }
 
-/* --- APP LAYOUT --- */
+/* --- APP LAYOUT (FLEX FIX) --- */
 #app-container { 
-    display: none; height: 100%; width: 100%; flex-direction: column;
+    display: none; 
+    height: 100%; 
+    width: 100%; 
+    flex-direction: column;
+    overflow: hidden; /* Prevents double scrollbars */
 }
 
 /* Top Nav */
 .top-nav {
     background-color: #fff;
-    height: 60px;
+    /* Removed fixed height, using min-height and padding for safety */
+    min-height: 60px;
     border-bottom: 1px solid #eaeaea;
     display: flex;
     justify-content: space-between;
@@ -51,8 +61,11 @@ html, body {
     padding: 0 25px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.03);
     z-index: 100;
+    flex-shrink: 0; /* Ensures header never shrinks/chops */
 }
+
 .brand { font-size: 1.3rem; font-weight: 800; color: #1a1a1a; letter-spacing: -0.5px; }
+
 .tabs { display: flex; gap: 20px; }
 .tab-btn {
     background: none; border: none; padding: 18px 5px; cursor: pointer;
@@ -61,6 +74,7 @@ html, body {
 }
 .tab-btn:hover { color: #333; }
 .tab-btn.active { color: #0066ff; border-bottom: 3px solid #0066ff; font-weight: 700; }
+
 .nav-right { display: flex; align-items: center; gap: 15px; }
 #user-display { font-size: 0.9rem; color: #666; font-weight: 500; }
 .logout-btn {
@@ -69,8 +83,14 @@ html, body {
 }
 .logout-btn:hover { background-color: #fad2d2; }
 
-/* --- TAB CONTENT --- */
-.tab-content { display: none; flex-grow: 1; height: calc(100% - 60px); overflow: hidden; position: relative; }
+/* --- TAB CONTENT (FLEX FIX) --- */
+.tab-content { 
+    display: none; 
+    flex-grow: 1; /* Fills remaining space automatically */
+    overflow: hidden; /* Clean clipping */
+    position: relative; 
+    height: auto; /* Removed the rigid calc(100% - 60px) */
+}
 .tab-content.active { display: block; }
 
 /* --- MAP VIEW --- */
