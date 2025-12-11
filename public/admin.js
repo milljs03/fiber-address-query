@@ -116,6 +116,7 @@ function openCampaignModal(campaignId = null) {
     // Clear previous state
     form.reset();
     plansContainer.innerHTML = '';
+    document.getElementById('camp-expires').value = ''; // Clear date explicitly
     
     if (campaignId) {
         // Edit Mode
@@ -132,6 +133,18 @@ function openCampaignModal(campaignId = null) {
             document.getElementById('camp-name').value = data.name || '';
             document.getElementById('camp-color').value = data.color || '#ff0000';
             document.getElementById('is-default-pricing').checked = (campaignId === 'global_default');
+            
+            // --- LOAD EXPIRATION DATE ---
+            if (data.expiresAt) {
+                // Handle Firestore Timestamp or standard JS Date
+                const d = data.expiresAt.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt);
+                // Format to YYYY-MM-DD for the input
+                if (!isNaN(d.getTime())) {
+                   const dateStr = d.toISOString().split('T')[0];
+                   document.getElementById('camp-expires').value = dateStr;
+                }
+            }
+            // ---------------------------------
             
             if (data.plans) {
                 Object.entries(data.plans).forEach(([name, details]) => {
@@ -255,6 +268,15 @@ async function handleCampaignSave(e) {
     const color = document.getElementById('camp-color').value;
     const isDefault = document.getElementById('is-default-pricing').checked;
     
+    // --- CAPTURE EXPIRATION ---
+    const expiresInput = document.getElementById('camp-expires').value;
+    let expiresAt = null;
+    if (expiresInput) {
+        // Create date object
+        expiresAt = new Date(expiresInput);
+    }
+    // -------------------------------
+
     const plans = {};
     const rows = document.querySelectorAll('.plan-row-card');
     rows.forEach(row => {
@@ -284,7 +306,7 @@ async function handleCampaignSave(e) {
     if (Object.keys(plans).length === 0) { alert("Please add at least one valid pricing tier."); return; }
 
     try {
-        const payload = { name, color, plans, updatedAt: new Date() };
+        const payload = { name, color, plans, expiresAt, updatedAt: new Date() };
         if (isDefault) {
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', 'global_default'), {
                 name: "Global Default", plans: plans, updatedAt: new Date()
@@ -342,6 +364,20 @@ function renderGridCard(data, container, isDefault) {
     // Header
     const colorDot = isDefault ? '<i class="fa-solid fa-globe"></i> ' : `<span class="color-dot" style="background-color:${data.color}"></span>`;
     const title = isDefault ? 'Global Defaults' : data.name;
+
+    // --- EXPIRATION LABEL ---
+    let expiryLabel = '';
+    if (data.expiresAt) {
+        const d = data.expiresAt.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt);
+        if (!isNaN(d.getTime())) {
+            const today = new Date();
+            const isExpired = today > d;
+            const colorStyle = isExpired ? 'color: red;' : 'color: #666;';
+            const text = isExpired ? 'Expired' : 'Expires';
+            expiryLabel = `<div style="font-size: 0.8rem; margin-bottom: 5px; ${colorStyle}"><i class="fa-regular fa-clock"></i> ${text}: ${d.toLocaleDateString()}</div>`;
+        }
+    }
+    // -----------------------------
     
     // Body (Plans Summary)
     let plansHtml = '';
@@ -365,6 +401,7 @@ function renderGridCard(data, container, isDefault) {
             ${isDefault ? '<small>Default</small>' : ''}
         </div>
         <div class="card-body">
+            ${expiryLabel}
             ${plansHtml}
         </div>
         <div class="card-actions">
@@ -391,6 +428,8 @@ window.duplicateCampaign = function(id) {
     openCampaignModal(); // Switch to create mode
     document.getElementById('camp-name').value = (campaign.name || 'Campaign') + " (Copy)";
     document.getElementById('camp-color').value = campaign.color || '#ff0000';
+    
+    // Do not copy expiration date to new campaign by default
     
     const container = document.getElementById('plans-container');
     container.innerHTML = '';

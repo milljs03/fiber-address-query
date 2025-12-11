@@ -183,6 +183,77 @@ function setupAutocomplete() {
     });
 }
 
+// --- EXPIRATION HELPER ---
+function isCampaignExpired(campaign) {
+    if (!campaign) {
+        console.log("isCampaignExpired: No campaign provided.");
+        return true;
+    }
+    const now = new Date();
+    console.log(`Checking expiration for campaign: ${campaign.name || 'Unnamed'}`);
+    console.log(`Current Time: ${now.toISOString()}`);
+    
+    // DEBUG: Print keys to see what we actually have
+    console.log("Campaign Object Keys:", Object.keys(campaign));
+
+    // 1. Check top-level expiration (future proofing)
+    // Accept endDate, expirationDate, OR expiresAt (based on your logs, it's expiresAt)
+    const rawEnd = campaign.endDate || campaign.expirationDate || campaign.expiresAt;
+
+    if (rawEnd) {
+        let end;
+        // Handle Firestore Timestamp or Date string
+        if (rawEnd.toDate && typeof rawEnd.toDate === 'function') {
+             end = rawEnd.toDate();
+        } else {
+             end = new Date(rawEnd);
+        }
+
+        end.setHours(23, 59, 59, 999); // End of that day
+        console.log(`Campaign End Date found: ${rawEnd} (Parsed: ${end.toISOString()})`);
+        
+        if (end < now) {
+            console.log("Result: Campaign Expired by top-level date.");
+            return true;
+        }
+    } else {
+        console.log("No top-level endDate, expirationDate, or expiresAt found.");
+    }
+
+    // 2. Check plan-level expiration logic
+    // If a campaign consists ONLY of time-bound promo plans, and they are ALL expired, 
+    // treat the campaign as expired.
+    if (campaign.plans) {
+        const plans = Object.values(campaign.plans);
+        const promoPlans = plans.filter(p => p.promoEnd);
+        const indefinitePlans = plans.filter(p => !p.promoEnd);
+
+        console.log(`Plans analysis: ${plans.length} total, ${promoPlans.length} promo, ${indefinitePlans.length} indefinite.`);
+
+        if (promoPlans.length > 0) {
+            const allPromosExpired = promoPlans.every(p => {
+                const d = new Date(p.promoEnd);
+                d.setHours(23, 59, 59, 999);
+                const isExp = d < now;
+                console.log(`  - Plan ${p.name || 'unnamed'} promoEnd: ${p.promoEnd} (${d.toISOString()}) -> Expired? ${isExp}`);
+                return isExp;
+            });
+
+            console.log(`Are all promos expired? ${allPromosExpired}`);
+
+            // If all promo plans are expired AND we have no standard/indefinite plans in this campaign bundle
+            // then the campaign is dead.
+            if (allPromosExpired && indefinitePlans.length === 0) {
+                console.log("Result: Campaign Expired (All promos ended, no indefinite plans).");
+                return true;
+            }
+        }
+    }
+
+    console.log("Result: Campaign Active.");
+    return false;
+}
+
 function evaluateLocation(point, addressText) {
     let isInside = false;
     let matchedCampaignId = null;
@@ -209,11 +280,50 @@ function evaluateLocation(point, addressText) {
         statusDiv.classList.add('success');
 
         let planData = null;
+        let activeCampaignName = null;
+        let isExpired = false;
+
+        // Check for Specific Campaign & Expiration
         if (matchedCampaignId && campaigns[matchedCampaignId]) {
-            planData = campaigns[matchedCampaignId].plans;
-            resultsDiv.innerHTML += `<div style="text-align:center; margin-bottom:10px; color:#666;">Applying Offer: <strong>${campaigns[matchedCampaignId].name}</strong></div>`;
-        } else if (campaigns['global_default']) {
+            console.log(`Matched Campaign ID: ${matchedCampaignId}`);
+            const campaign = campaigns[matchedCampaignId];
+            
+            const expired = isCampaignExpired(campaign);
+            console.log(`Campaign expired check result: ${expired}`);
+
+            if (!expired) {
+                // Valid Campaign
+                planData = campaign.plans;
+                activeCampaignName = campaign.name;
+                console.log("Using Campaign Pricing.");
+            } else {
+                // Expired Campaign
+                isExpired = true;
+                activeCampaignName = `${campaign.name} (Expired)`;
+                console.log("Campaign Expired. Will fall back to default.");
+            }
+        } else {
+            console.log("No matched campaign ID or campaign not found in cache.");
+        }
+        
+        // If no campaign found OR campaign was expired, load defaults
+        if (!planData && campaigns['global_default']) {
             planData = campaigns['global_default'].plans;
+            if(!activeCampaignName) activeCampaignName = "Standard Pricing";
+        }
+
+        // Render Status Message
+        if (isExpired) {
+            resultsDiv.innerHTML += `
+                <div style="text-align:center; margin-bottom:10px; color:#d63384; font-size:0.9rem;">
+                    <em>Note: Campaign "${activeCampaignName}" has ended. Showing standard pricing.</em>
+                </div>`;
+        } else if (matchedCampaignId && !isExpired) {
+            resultsDiv.innerHTML += `
+                <div style="text-align:center; margin-bottom:10px; color:#0d6efd;">
+                    Applying Offer: <strong>${activeCampaignName}</strong>
+                </div>`;
+        } else {
             resultsDiv.innerHTML += `<div style="text-align:center; margin-bottom:10px; color:#666;">Standard Pricing Applied</div>`;
         }
 

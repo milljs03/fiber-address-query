@@ -156,10 +156,12 @@ body {
     border-right: 1px solid #e0e0e0;
     padding: 20px;
     overflow-y: auto;
+    overflow-x: hidden; /* Fix horizontal scroll */
     display: flex;
     flex-direction: column;
     box-shadow: 2px 0 5px rgba(0,0,0,0.02);
     z-index: 50;
+    box-sizing: border-box; /* Ensure padding doesn't affect width calculations */
 }
 
 .map-container {
@@ -176,6 +178,7 @@ body {
 /* Sidebar Elements */
 .search-box {
     margin-bottom: 20px;
+    width: 100%;
 }
 
 #address-input {
@@ -186,6 +189,7 @@ body {
     font-size: 1rem;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
     transition: border-color var(--transition-speed);
+    box-sizing: border-box; /* Crucial for inputs inside strict containers */
 }
 
 #address-input:focus {
@@ -193,6 +197,68 @@ body {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
 }
+
+/* Map Legend - Floating Position */
+.map-legend {
+    position: absolute;
+    bottom: 25px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #ced4da;
+    border-radius: var(--border-radius);
+    padding: 15px;
+    font-size: 0.85rem;
+    z-index: 5; /* Above map tiles, below standard map controls usually */
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    width: max-content;
+    max-width: 250px;
+}
+
+.legend-title {
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.legend-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #333;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 2px rgba(0,0,0,0.2);
+}
+
+.dot.red { background-color: #dc3545; }    /* Active */
+.dot.orange { background-color: #fd7e14; } /* Build in Progress */
+.dot.green { background-color: #198754; }  /* Business Only */
+.dot.blue { background-color: #0d6efd; }   /* Future Residential */
+.dot.marker { 
+    width: 10px; 
+    height: 10px; 
+    border-radius: 50%; 
+    background-color: #ea4335; 
+    border: 2px solid white; 
+    box-shadow: 0 0 4px rgba(0,0,0,0.4);
+}
+
 
 .status-indicator {
     padding: 15px;

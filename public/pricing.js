@@ -153,16 +153,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     let campaignName = "Standard"; 
     
     try {
+        // 1. Always load global defaults first
         const defaultDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', 'global_default'));
         if (defaultDoc.exists() && defaultDoc.data().plans) {
             plansToShow = defaultDoc.data().plans;
         }
 
+        // 2. If a campaign is requested, check if it is valid AND active
         if (campaignId) {
             const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', campaignId));
-            if (snap.exists() && snap.data().plans) {
-                plansToShow = snap.data().plans;
-                campaignName = snap.data().name || "Special Offer";
+            
+            if (snap.exists()) {
+                const data = snap.data();
+                let isExpired = false;
+
+                // --- EXPIRATION CHECK ---
+                if (data.expiresAt) {
+                    // Convert Firestore Timestamp or String to JS Date
+                    const expiryDate = data.expiresAt.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt);
+                    const now = new Date();
+
+                    if (now > expiryDate) {
+                        isExpired = true;
+                        console.log(`Campaign ${campaignId} expired on ${expiryDate.toLocaleDateString()}. Reverting to defaults.`);
+                    }
+                }
+
+                // Only overwrite defaults if plans exist AND it's not expired
+                if (!isExpired && data.plans) {
+                    plansToShow = data.plans;
+                    campaignName = data.name || "Special Offer";
+                }
             }
         }
     } catch (e) {

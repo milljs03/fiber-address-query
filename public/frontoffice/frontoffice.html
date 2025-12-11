@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link rel="stylesheet" href="frontoffice.css">
+     <link rel="icon" type="image/png" href="/frontoffice/favicon.png">
+
     
     <!-- Config from Server (Mock for development) -->
     <script>
@@ -62,7 +64,7 @@
             <div class="sidebar">
                 <div class="search-box">
                     <label style="font-weight:600; font-size:0.9rem; color:#555; display:block; margin-bottom:5px;">Check Address Availability</label>
-                    <input type="text" id="address-input" placeholder="Enter service address...">
+                    <input type="text" id="address-input" placeholder="Enter service address..." class="pac-target-input" autocomplete="off">
                 </div>
 
                 <!-- Status Indicator -->
@@ -81,17 +83,31 @@
             <!-- Map Area -->
             <div class="map-container">
                 <div id="map"></div>
+                
                 <!-- Layer Toggle -->
                 <div class="layer-control">
                     <input type="checkbox" id="toggle-reference-layer">
                     <label for="toggle-reference-layer">Show Reference Zones (KML)</label>
+                </div>
+
+                <!-- Map Legend (Moved Here) -->
+                <div class="map-legend">
+                    <div class="legend-title">Map Key</div>
+                    <div class="legend-grid">
+                        <div class="legend-item"><span class="dot red"></span> Res/Bus Fiber (Active)</div>
+                        <div class="legend-item"><span class="dot orange"></span> Build in Progress</div>
+                        <div class="legend-item"><span class="dot green"></span> Business Only</div>
+                        <div class="legend-item"><span class="dot blue"></span> Future Residential</div>
+                        <div class="legend-item"><span class="dot marker"></span> Customer Location</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBw8z2IL4dN5oldPzRW3a581mkXC7VuXe4&libraries=places,geometry&callback=initGoogleMaps" async defer></script>    <script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBw8z2IL4dN5oldPzRW3a581mkXC7VuXe4&libraries=places,geometry&callback=initGoogleMaps" async defer></script>
+    <script>
         function initGoogleMaps() {
             window.isGoogleMapsReady = true;
             window.dispatchEvent(new Event('google-maps-ready'));
