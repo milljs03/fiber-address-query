@@ -21,11 +21,12 @@ let currentUser = null;
 
 // Auth Check
 const initAuth = async () => {
+    // Check for custom token (if passed from server/context)
     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
         await signInWithCustomToken(auth, __initial_auth_token);
-    } else {
-        await signInAnonymously(auth);
-    }
+    } 
+    // FIXED: Removed the 'else { signInAnonymously }' block.
+    // This allows the browser to restore the existing session from frontoffice.html
 };
 
 initAuth();
@@ -35,6 +36,10 @@ onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
         document.getElementById('auth-cover').style.display = 'none';
+        console.log("Session restored for:", user.email);
+    } else {
+        console.warn("No user session found. Please log in via Front Office first.");
+        // Optional: Redirect back to frontoffice or show a specific message
     }
 });
 
@@ -117,6 +122,7 @@ async function saveOrder(formData) {
         },
         // Meta
         surveyContact: formProps.surveyContact,
+        internalNotes: formProps.internalNotes || '', // New Field
         createdBy: currentUser.email || 'unknown_agent',
         createdById: currentUser.uid,
         createdAt: new Date(),
@@ -135,7 +141,10 @@ async function saveOrder(formData) {
     } catch (e) {
         console.error("Error saving order:", e);
         alert("Error saving order: " + e.message);
-        btn.textContent = "Try Again";
-        btn.disabled = false;
+        const btn = document.querySelector('.btn-submit'); // Re-select to be safe
+        if(btn) {
+            btn.textContent = "Try Again";
+            btn.disabled = false;
+        }
     }
 }
