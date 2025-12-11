@@ -3,93 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Front Office Portal</title>
-    <link rel="stylesheet" href="frontoffice.css">
+    <title>Fiber Service Portal | Front Office</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="icon" type="image/png" href="/favicon.png">
-    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="frontoffice.css">
+    
+    <!-- Config from Server (Mock for development) -->
+    <script>
+        const __firebase_config = JSON.stringify({
+            apiKey: "AIzaSyDt4ifOCtdx1NuyrEgGSzg-ON3Cc3y4rkg",
+            authDomain: "fiber-service-query.firebaseapp.com",
+            projectId: "fiber-service-query",
+            storageBucket: "fiber-service-query.firebasestorage.app",
+            messagingSenderId: "394137990800",
+            appId: "1:394137990800:web:12e6c410abbd99f403ca15",
+            measurementId: "G-4Z1285PTRT"
+        });
+    </script>
 </head>
 <body>
 
+    <!-- Authentication Screen -->
     <div id="login-screen">
-        <div class="login-box">
-            <h1>Front Office Portal</h1>
-            <p>Employee Access Only</p>
-            <button id="login-btn"><i class="fa-brands fa-google"></i> Sign in with NPTEL</button>
-            <div id="auth-message" class="error-msg"></div>
+        <div class="login-card">
+            <img src="../logos/NPtech-logo.png" alt="NPTech Logo" class="login-logo">
+            <h2 style="margin-top:0; color:#333;">Front Office Portal</h2>
+            <p style="color:#666; margin-bottom:2rem;">Please sign in with your corporate account to access the fiber mapping and order system.</p>
+            <button id="login-btn" class="login-btn">
+                <i class="fa-brands fa-google"></i> Sign in with Google
+            </button>
+            <div id="auth-message" style="color:red; margin-top:15px; font-size:0.9rem;"></div>
         </div>
     </div>
 
+    <!-- Main Application -->
     <div id="app-container">
-        
-        <aside class="sidebar-panel">
-            <header class="panel-header">
-                <div class="brand">
-                    <img src="logos/NPtech-logo.png" alt="NP Tech" class="brand-logo">
-                    <span>Front Office</span>
-                </div>
-                <div class="user-controls">
-                    <span id="user-email"></span>
-                    <button id="logout-btn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
-                </div>
-            </header>
-
-            <div style="padding: 10px 20px 0 20px;">
-                <button onclick="window.location.href='serviceorderlist.html'" style="width:100%; padding:10px; background:#fff; color:#333; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <i class="fa-solid fa-list-check"></i> View Service Orders
-                </button>
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <img src="../logos/NPtech-logo.png" alt="Logo" height="30">
+                <span>Fiber Map & Orders</span>
             </div>
+            <div class="nav-user">
+                <span><i class="fa-solid fa-user-circle"></i> <span id="user-email"></span></span>
+                <a href="serviceorderlist.html" target="_blank" class="btn-orders">
+                    <i class="fa-solid fa-list-check"></i> Order List
+                </a>
+                <button id="logout-btn" class="btn-logout">Sign Out</button>
+            </div>
+        </nav>
 
-            <div class="search-section">
-                <label>Customer Address Search</label>
-                <div class="input-group">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="address-input" placeholder="Enter address...">
+        <!-- Split View -->
+        <div class="content-wrapper">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="search-box">
+                    <label style="font-weight:600; font-size:0.9rem; color:#555; display:block; margin-bottom:5px;">Check Address Availability</label>
+                    <input type="text" id="address-input" placeholder="Enter service address...">
                 </div>
-            </div>
 
-            <div class="layer-section" style="padding: 0 20px 15px 20px; border-bottom: 1px solid #eee; background: #f8f9fa;">
-                <label style="font-size: 0.85rem; font-weight: 600; display:block; margin-bottom:8px; color:#444;">Map Layers</label>
-                <label class="toggle-checkbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
-                    <input type="checkbox" id="toggle-reference-layer" checked>
-                    <span>Show Network Status Overlay</span>
-                </label>
-            </div>
+                <!-- Status Indicator -->
+                <div id="status-indicator" class="status-indicator hidden"></div>
 
-            <div id="results-area">
+                <!-- Results Area -->
+                <div id="plans-list"></div>
+
+                <!-- Empty State -->
                 <div class="empty-state">
                     <i class="fa-solid fa-map-location-dot"></i>
-                    <p>Enter an address to see territory status and available plans.</p>
+                    <p>Search for an address to view service zones and available plans.</p>
                 </div>
-                <div id="status-indicator" class="hidden"></div>
-                <div id="plans-list" class="pricing-container"></div>
             </div>
-        </aside>
 
-        <main class="map-panel">
-            <div id="map"></div>
-            
-            <div class="map-legend">
-                <div class="legend-title">Map Key</div>
-                <div class="legend-grid">
-                    <div class="legend-item"><span class="dot red"></span> Res/Bus Fiber (Active)</div>
-                    <div class="legend-item"><span class="dot orange"></span> Build in Progress</div>
-                    <div class="legend-item"><span class="dot green"></span> Business Only</div>
-                    <div class="legend-item"><span class="dot blue"></span> Future Residential</div>
-                    <div class="legend-item"><span class="dot marker"></span> Customer Location</div>
+            <!-- Map Area -->
+            <div class="map-container">
+                <div id="map"></div>
+                <!-- Layer Toggle -->
+                <div class="layer-control">
+                    <input type="checkbox" id="toggle-reference-layer">
+                    <label for="toggle-reference-layer">Show Reference Zones (KML)</label>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
-    <script>
-      window.isGoogleMapsReady = false;
-      window.initMap = function() {
-        window.isGoogleMapsReady = true;
-        window.dispatchEvent(new Event('google-maps-ready'));
-      };
+    <!-- Scripts -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBw8z2IL4dN5oldPzRW3a581mkXC7VuXe4&libraries=places,geometry&callback=initGoogleMaps" async defer></script>    <script>
+        function initGoogleMaps() {
+            window.isGoogleMapsReady = true;
+            window.dispatchEvent(new Event('google-maps-ready'));
+        }
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBw8z2IL4dN5oldPzRW3a581mkXC7VuXe4&libraries=geometry,places&callback=initMap" async defer></script>
     <script type="module" src="frontoffice.js"></script>
 </body>
 </html>

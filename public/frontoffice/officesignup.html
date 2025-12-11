@@ -8,17 +8,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link rel="stylesheet" href="officesignup.css">
-    <style>
-        /* Specific overrides for office version */
-        body { background-color: #f8f9fa; }
-        .container { max-width: 900px; margin: 40px auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .header-band { background: #0d6efd; color: white; padding: 15px; border-radius: 8px 8px 0 0; margin: -40px -40px 30px -40px; text-align: center; }
-        .plan-summary { background: #e7f1ff; border: 1px solid #b6d4fe; padding: 15px; border-radius: 6px; margin-bottom: 25px; }
-        .btn-submit { background: #0d6efd; width: 100%; font-size: 1.2rem; }
-        .btn-submit:hover { background: #0b5ed7; }
-        #auth-cover { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:9999; display:flex; justify-content:center; align-items:center; flex-direction:column; }
-        .full-width { grid-column: 1 / -1; }
-    </style>
+    
+    <!-- Config from Server (Mock for development) -->
+    <script>
+        const __firebase_config = JSON.stringify({
+            apiKey: "AIzaSyDt4ifOCtdx1NuyrEgGSzg-ON3Cc3y4rkg",
+            authDomain: "fiber-service-query.firebaseapp.com",
+            projectId: "fiber-service-query",
+            storageBucket: "fiber-service-query.firebasestorage.app",
+            messagingSenderId: "394137990800",
+            appId: "1:394137990800:web:12e6c410abbd99f403ca15",
+            measurementId: "G-4Z1285PTRT"
+        });
+    </script>
 </head>
 <body>
 
@@ -32,125 +34,127 @@
             <h2><i class="fa-solid fa-headset"></i> Front Office Order Entry</h2>
         </div>
 
-        <div class="plan-summary">
-            <h3 style="margin-top:0;">Selected Plan: <span id="disp-plan-name">Loading...</span></h3>
-            <div style="display:flex; gap: 20px; margin-top:10px;">
-                <div><strong>Price:</strong> <span id="disp-plan-price">-</span></div>
-                <div><strong>Speed:</strong> <span id="disp-plan-speed">-</span></div>
+        <div class="form-content">
+            <div class="plan-summary">
+                <h3><i class="fa-solid fa-tag"></i> Selected Plan: <span id="disp-plan-name">Loading...</span></h3>
+                <div class="plan-meta">
+                    <div><i class="fa-solid fa-dollar-sign"></i> <span id="disp-plan-price">-</span>/mo</div>
+                    <div><i class="fa-solid fa-gauge-high"></i> <span id="disp-plan-speed">-</span></div>
+                </div>
+                <div id="disp-extras" style="margin-top:15px; color:#d63384; font-weight:bold; font-size:0.9rem;"></div>
+                <div style="margin-top:10px; font-size:0.85rem; color:#666;" id="prefilled-info"></div>
             </div>
-            <div id="disp-extras" style="margin-top:10px; color:#d63384; font-weight:bold;"></div>
-            <div style="margin-top:10px; font-size:0.9rem; color:#666;" id="prefilled-info"></div>
+
+            <form id="so-form">
+                <!-- Customer Info -->
+                <div class="form-section">
+                    <h3>Primary Customer Information</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="custName">Full Name *</label>
+                            <input type="text" id="custName" name="custName" required placeholder="John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label for="dob">Date of Birth</label>
+                            <input type="date" id="dob" name="dob">
+                        </div>
+                        <div class="form-group">
+                            <label for="ssn4">SSN (Last 4)</label>
+                            <input type="text" id="ssn4" name="ssn4" maxlength="4" pattern="\d{4}" placeholder="1234">
+                        </div>
+                        <div class="form-group">
+                            <label for="mobile">Mobile Phone *</label>
+                            <input type="tel" id="mobile" name="mobile" required placeholder="(555) 123-4567">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="email">Email Address *</label>
+                            <input type="email" id="email" name="email" required placeholder="john@example.com">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service Address -->
+                <div class="form-section">
+                    <h3>Service Location</h3>
+                    <div class="form-group full-width">
+                        <label for="homeAddress">Service Address *</label>
+                        <input type="text" id="homeAddress" name="homeAddress" required readonly>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="mailAddress">Mailing Address (if different)</label>
+                        <input type="text" id="mailAddress" name="mailAddress" placeholder="PO Box 123, City, ST 12345">
+                    </div>
+                </div>
+
+                <!-- Joint Applicant -->
+                <div class="form-section">
+                    <h3>Joint Applicant (Optional)</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="jointName">Joint Name</label>
+                            <input type="text" id="jointName" name="jointName">
+                        </div>
+                        <div class="form-group">
+                            <label for="jointDob">Joint DOB</label>
+                            <input type="date" id="jointDob" name="jointDob">
+                        </div>
+                        <div class="form-group">
+                            <label for="jointSsn4">Joint SSN (Last 4)</label>
+                            <input type="text" id="jointSsn4" name="jointSsn4" maxlength="4">
+                        </div>
+                        <div class="form-group">
+                            <label for="jointMobile">Joint Mobile</label>
+                            <input type="tel" id="jointMobile" name="jointMobile">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="jointEmail">Joint Email</label>
+                            <input type="email" id="jointEmail" name="jointEmail">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Details -->
+                <div class="form-section">
+                    <h3>Order Details</h3>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="fiberPlan">Plan Confirmation *</label>
+                            <select id="fiberPlan" name="fiberPlan" required>
+                                <option value="">-- Confirm Plan --</option>
+                                <option value="Standard - 100 Mbps">Standard - 100 Mbps</option>
+                                <option value="Advanced - 500 Mbps">Advanced - 500 Mbps</option>
+                                <option value="Premium - 1 Gig">Premium - 1 Gig</option>
+                                <option value="Custom/Promo">Custom / Promo Plan</option>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="surveyContact">Survey Contact Preference *</label>
+                            <select id="surveyContact" name="surveyContact" required>
+                                <option value="Call Before Coming">Call Before Coming</option>
+                                <option value="Text Before Coming">Text Before Coming</option>
+                                <option value="Email Only">Email Only</option>
+                                <option value="Any Method">Any Method</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Internal Notes Section -->
+                <div class="form-section">
+                    <h3>Internal Notes</h3>
+                    <div class="form-group full-width">
+                        <label for="internalNotes">Agent Notes (Hidden from Customer)</label>
+                        <textarea id="internalNotes" name="internalNotes" rows="3" placeholder="Enter any specific notes about transfer, validation issues, etc..."></textarea>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn-submit">
+                        <i class="fa-solid fa-check"></i> Create Service Order
+                    </button>
+                </div>
+            </form>
         </div>
-
-        <form id="so-form">
-            <!-- Customer Info -->
-            <div class="form-section">
-                <h3>Primary Customer Information</h3>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="custName">Full Name *</label>
-                        <input type="text" id="custName" name="custName" required placeholder="John Doe">
-                    </div>
-                    <div class="form-group">
-                        <label for="dob">Date of Birth</label>
-                        <input type="date" id="dob" name="dob">
-                    </div>
-                    <div class="form-group">
-                        <label for="ssn4">SSN (Last 4)</label>
-                        <input type="text" id="ssn4" name="ssn4" maxlength="4" pattern="\d{4}" placeholder="1234">
-                    </div>
-                    <div class="form-group">
-                        <label for="mobile">Mobile Phone *</label>
-                        <input type="tel" id="mobile" name="mobile" required placeholder="(555) 123-4567">
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="email">Email Address *</label>
-                        <input type="email" id="email" name="email" required placeholder="john@example.com">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Service Address -->
-            <div class="form-section">
-                <h3>Service Location</h3>
-                <div class="form-group full-width">
-                    <label for="homeAddress">Service Address *</label>
-                    <input type="text" id="homeAddress" name="homeAddress" required readonly style="background:#f0f0f0; cursor:not-allowed;">
-                </div>
-                <div class="form-group full-width">
-                    <label for="mailAddress">Mailing Address (if different)</label>
-                    <input type="text" id="mailAddress" name="mailAddress" placeholder="PO Box 123, City, ST 12345">
-                </div>
-            </div>
-
-            <!-- Joint Applicant -->
-            <div class="form-section">
-                <h3>Joint Applicant (Optional)</h3>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="jointName">Joint Name</label>
-                        <input type="text" id="jointName" name="jointName">
-                    </div>
-                    <div class="form-group">
-                        <label for="jointDob">Joint DOB</label>
-                        <input type="date" id="jointDob" name="jointDob">
-                    </div>
-                    <div class="form-group">
-                        <label for="jointSsn4">Joint SSN (Last 4)</label>
-                        <input type="text" id="jointSsn4" name="jointSsn4" maxlength="4">
-                    </div>
-                    <div class="form-group">
-                        <label for="jointMobile">Joint Mobile</label>
-                        <input type="tel" id="jointMobile" name="jointMobile">
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="jointEmail">Joint Email</label>
-                        <input type="email" id="jointEmail" name="jointEmail">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Order Details -->
-            <div class="form-section">
-                <h3>Order Details</h3>
-                <div class="form-grid">
-                    <div class="form-group full-width">
-                        <label for="fiberPlan">Plan Confirmation *</label>
-                        <select id="fiberPlan" name="fiberPlan" required>
-                            <option value="">-- Confirm Plan --</option>
-                            <option value="Standard - 100 Mbps">Standard - 100 Mbps</option>
-                            <option value="Advanced - 500 Mbps">Advanced - 500 Mbps</option>
-                            <option value="Premium - 1 Gig">Premium - 1 Gig</option>
-                            <option value="Custom/Promo">Custom / Promo Plan</option>
-                        </select>
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="surveyContact">Survey Contact Preference *</label>
-                        <select id="surveyContact" name="surveyContact" required>
-                            <option value="Call Before Coming">Call Before Coming</option>
-                            <option value="Text Before Coming">Text Before Coming</option>
-                            <option value="Email Only">Email Only</option>
-                            <option value="Any Method">Any Method</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Internal Notes Section -->
-            <div class="form-section">
-                <h3>Internal Notes</h3>
-                <div class="form-group full-width">
-                    <label for="internalNotes">Agent Notes (Hidden from Customer)</label>
-                    <textarea id="internalNotes" name="internalNotes" rows="3" placeholder="Enter any specific notes about transfer, validation issues, etc..."></textarea>
-                </div>
-            </div>
-
-            <div style="margin-top:30px;">
-                <button type="submit" class="btn-submit">
-                    <i class="fa-solid fa-check"></i> Create Service Order
-                </button>
-            </div>
-        </form>
     </div>
 
     <!-- Scripts -->
