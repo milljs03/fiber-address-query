@@ -1,33 +1,55 @@
-body, html {
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f3f4f6; /* Slightly cooler gray for modern feel */
-    color: #333;
-    height: 100%;
+/* --- Fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@300;400;500;600;700&display=swap');
+
+/* --- Brand Variables --- */
+:root {
+    /* CFN Colors */
+    --cfn-green: #03A63C;
+    --cfn-dk-green: #0B8C38;
+    --cfn-mute-green: #46A66F;
+    --cfn-light-green: #8BD9AD;
+    
+    /* NPTech Colors */
+    --npt-blue: #0663AF;
+    --npt-lt-blue: #64ADD9;
+    --npt-gray: #4D4D4F;
+    --npt-white: #F2F2F2;
+    --npt-black: #141414;
 }
 
 * { box-sizing: border-box; }
 
+body, html {
+    margin: 0;
+    padding: 0;
+    /* Applied Brand Body Font */
+    font-family: 'Open Sans', 'Segoe UI', sans-serif;
+    
+    /* Brand Background: NPT White + CFN Light Green Dots */
+    background-color: var(--npt-white); 
+    background-image: radial-gradient(var(--cfn-light-green) 1px, transparent 1px);
+    background-size: 24px 24px;
+    
+    color: var(--npt-black);
+    height: 100%;
+}
+
 /* --- Header --- */
 .site-header {
     background-color: #ffffff;
-    /* CHANGED: Left padding set specifically to 45px */
     padding: 15px 45px; 
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
     height: 80px; 
     display: flex;
     align-items: center;
     position: relative;
-    z-index: 1100; /* Header stays ON TOP of ribbon */
+    z-index: 1100;
     width: 100%;
 }
 
 .logo-container {
     width: 100%;
-    /* CHANGED: Removed max-width restriction so it doesn't center */
     max-width: 100%; 
-    /* CHANGED: Removed auto margin to stop centering */
     margin: 0; 
     display: flex;
     justify-content: flex-start; 
@@ -43,7 +65,7 @@ body, html {
 
 /* --- Layout --- */
 .main-wrapper {
-    max-width: 1100px; /* Slightly tighter width for focus */
+    max-width: 1100px; 
     margin: 50px auto;
     padding: 0 20px;
     min-height: calc(100vh - 200px);
@@ -61,12 +83,15 @@ body, html {
     background: white;
     padding: 50px;
     border-radius: 16px;
+    /* Subtle shadow using NPT Black tint */
     box-shadow: 0 10px 40px rgba(0,0,0,0.06);
     border: 1px solid #fff;
 }
 
 .form-header h2 {
-    color: #1f2937; /* Dark charcoal */
+    /* Brand Heading Font */
+    font-family: 'Montserrat', sans-serif;
+    color: var(--npt-black); 
     margin-top: 0;
     font-size: 2rem;
     font-weight: 700;
@@ -77,20 +102,21 @@ body, html {
 }
 
 .form-header h2 i {
-    color: #00a651; /* Brand green icon */
+    color: var(--cfn-green); 
 }
 
 .form-header p {
-    color: #6b7280; /* Muted gray text */
-    margin-bottom: 25px; /* Reduced margin */
+    color: var(--npt-gray); 
+    margin-bottom: 25px; 
     font-size: 1.05rem;
     line-height: 1.6;
 }
 
 /* --- Notice Box Styling --- */
+/* Using NPTech Blue for "Information" to distinguish from "Action" (Green) */
 .notice-box {
-    background-color: #eef2ff; /* Very light blue/indigo background */
-    border-left: 4px solid #0056b3; /* Brand blue accent */
+    background-color: rgba(6, 99, 175, 0.08); /* Light tint of NPT Blue */
+    border-left: 4px solid var(--npt-blue); 
     padding: 15px 20px;
     border-radius: 4px;
     margin-bottom: 30px;
@@ -100,7 +126,7 @@ body, html {
 }
 
 .notice-box i {
-    color: #0056b3;
+    color: var(--npt-blue);
     font-size: 1.2rem;
     margin-top: 2px;
 }
@@ -108,7 +134,7 @@ body, html {
 .notice-box p {
     margin: 0;
     font-size: 0.95rem;
-    color: #374151;
+    color: var(--npt-black);
     line-height: 1.5;
 }
 
@@ -127,10 +153,11 @@ body, html {
 
 label {
     display: block;
+    font-family: 'Montserrat', sans-serif;
     font-size: 0.9rem;
     font-weight: 600;
     margin-bottom: 8px;
-    color: #374151;
+    color: var(--npt-gray);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -140,19 +167,21 @@ input[type="email"],
 input[type="tel"] {
     width: 100%;
     padding: 14px 16px;
-    background-color: #f9fafb; /* Light background */
+    background-color: #f9fafb; 
     border: 1px solid #e5e7eb;
     border-radius: 8px;
+    font-family: 'Open Sans', sans-serif;
     font-size: 1rem;
-    color: #1f2937;
+    color: var(--npt-black);
     transition: all 0.2s ease;
 }
 
 input:focus {
     outline: none;
     background-color: #fff;
-    border-color: #00a651;
-    box-shadow: 0 0 0 4px rgba(0, 166, 81, 0.1);
+    /* Focus: CFN Green */
+    border-color: var(--cfn-green);
+    box-shadow: 0 0 0 4px rgba(3, 166, 60, 0.1);
 }
 
 /* Readonly Address Style */
@@ -161,8 +190,8 @@ input:focus {
 }
 
 .readonly-input-wrapper input {
-    background-color: #f3f4f6; /* Explicit readonly grey */
-    color: #6b7280;
+    background-color: var(--npt-white); 
+    color: var(--npt-gray);
     padding-right: 45px;
     cursor: not-allowed;
     font-weight: 500;
@@ -185,23 +214,25 @@ input:focus {
 }
 
 #submit-btn {
-    background-color: #00a651;
+    /* Primary Action: CFN Green */
+    background-color: var(--cfn-green);
     color: white;
     border: none;
     padding: 16px 30px;
     font-size: 1.1rem;
+    font-family: 'Montserrat', sans-serif;
     font-weight: 700;
     border-radius: 8px;
     cursor: pointer;
     width: 100%;
     transition: all 0.2s;
-    box-shadow: 0 4px 6px rgba(0, 166, 81, 0.2);
+    box-shadow: 0 4px 6px rgba(3, 166, 60, 0.2);
 }
 
 #submit-btn:hover {
-    background-color: #008c44;
+    background-color: var(--cfn-dk-green);
     transform: translateY(-1px);
-    box-shadow: 0 6px 12px rgba(0, 166, 81, 0.3);
+    box-shadow: 0 6px 12px rgba(3, 166, 60, 0.3);
 }
 
 #submit-btn:disabled {
@@ -214,15 +245,16 @@ input:focus {
 
 /* --- Right Column: Summary --- */
 .summary-container {
-    flex: 1; /* Takes up 1/3 space */
+    flex: 1; 
     position: sticky;
-    top: 110px; /* Offset for sticky header */
+    top: 110px; 
 }
 
 .summary-container h3 {
+    font-family: 'Montserrat', sans-serif;
     margin-top: 0;
     margin-bottom: 20px;
-    color: #374151;
+    color: var(--npt-gray);
     font-size: 1.2rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -230,7 +262,6 @@ input:focus {
 }
 
 /* --- Reusing Pricing Card Styles for Summary --- */
-/* Simplified version of pricing card for this context */
 .pricing-box {
     background: #ffffff;
     border-radius: 16px;
@@ -250,6 +281,7 @@ input:focus {
     z-index: 1;
 }
 
+/* Gold Effect maintained as per branding preference */
 .pricing-box.popular::before {
     content: "";
     position: absolute;
@@ -278,10 +310,11 @@ input:focus {
     transform: translate(-50%, -50%);
     background: linear-gradient(110deg, #d4af37 0%, #f9e076 20%, #d4af37 40%, #f9e076 60%, #d4af37 80%, #f9e076 100%);
     background-size: 200% 100%;
-    color: #333;
+    color: var(--npt-black);
     padding: 6px 20px;
     border-radius: 20px;
-    font-weight: bold;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
     font-size: 0.8rem;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     white-space: nowrap;
@@ -291,43 +324,47 @@ input:focus {
 }
 
 .panel-heading {
+    font-family: 'Montserrat', sans-serif;
     font-size: 1.6rem;
     font-weight: 800;
-    color: #1f2937;
+    color: var(--npt-black);
     margin-bottom: 15px;
 }
 
 .price {
     display: block;
+    font-family: 'Montserrat', sans-serif;
     font-size: 3rem;
     font-weight: 800;
-    color: #00a651;
+    color: var(--cfn-green);
     line-height: 1;
     margin-bottom: 5px;
 }
 
 .price small {
+    font-family: 'Open Sans', sans-serif;
     font-size: 1rem;
-    font-weight: normal;
-    color: #6b7280;
+    font-weight: 600;
+    color: var(--npt-gray);
 }
 
 .speed-features {
+    font-family: 'Montserrat', sans-serif;
     font-size: 1.5rem;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--npt-black);
     margin-top: 15px;
 }
 
 .speed-capability {
     font-size: 0.95rem;
-    color: #6b7280;
+    color: var(--npt-gray);
     margin-bottom: 25px;
     font-weight: 500;
 }
 
 .core-benefits {
-    background-color: #f9fafb;
+    background-color: var(--npt-white);
     padding: 15px;
     border-radius: 8px;
     display: flex;
@@ -338,7 +375,7 @@ input:focus {
 
 .highlight-text {
     font-weight: 600;
-    color: #4b5563;
+    color: var(--npt-gray);
     font-size: 0.95rem;
     display: flex;
     align-items: center;
@@ -350,38 +387,41 @@ input:focus {
     content: "\f00c";
     font-family: "Font Awesome 6 Free";
     font-weight: 900;
-    color: #00a651;
+    color: var(--cfn-green);
 }
 
-/* --- Footer --- */
+/* --- Footer (Unified with other pages) --- */
 .footer-container {
-    background-color: #1f2937;
-    color: #9ca3af;
+    background-color: #ffffff; /* Changed to White to match other pages */
+    border-top: 1px solid #e0e0e0;
     padding: 40px 20px;
     text-align: center;
     margin-top: 80px;
-    border-top: 1px solid #374151;
 }
 
 .footer-container p {
+    margin: 8px 0;
+    color: var(--npt-gray);
     font-size: 0.9rem;
 }
 
 .footer-container a {
-    color: #d1d5db;
+    color: var(--cfn-green);
     text-decoration: none;
+    font-weight: 600;
     margin: 0 10px;
-    transition: color 0.2s;
+    transition: color 0.2s ease;
 }
 
 .footer-container a:hover {
-    color: white;
+    color: var(--cfn-dk-green);
+    text-decoration: underline;
 }
 
 /* --- Mobile Responsiveness --- */
 @media (max-width: 900px) {
     .signup-layout {
-        flex-direction: column-reverse; /* Form on bottom, Summary on top for mobile context */
+        flex-direction: column-reverse; 
     }
     
     .form-container, .summary-container {
@@ -394,7 +434,7 @@ input:focus {
     }
 
     .summary-container {
-        position: static; /* Remove sticky on mobile */
+        position: static; 
         margin-bottom: 20px;
     }
 

@@ -1,40 +1,60 @@
+/* --- Fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@300;400;600;700&display=swap');
+
+/* --- Brand Variables --- */
+:root {
+    /* CFN Colors */
+    --cfn-green: #03A63C;
+    --cfn-dk-green: #0B8C38;
+    --cfn-mute-green: #46A66F;
+    --cfn-light-green: #8BD9AD;
+    
+    /* NPTech Colors */
+    --npt-blue: #0663AF;
+    --npt-lt-blue: #64ADD9;
+    --npt-gray: #4D4D4F;
+    --npt-white: #F2F2F2;
+    --npt-black: #141414;
+}
+
 * {
     box-sizing: border-box;
 }
 
-/* --- UPDATED: Main Layout for Sticky Footer --- */
+/* --- Main Layout --- */
 body, html {
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f9fa;
-    color: #333;
-    /* Flex column ensures the footer pushes to the bottom */
+    /* Applied Brand Body Font */
+    font-family: 'Open Sans', 'Segoe UI', sans-serif;
+    
+    /* Brand Background: NPT White + CFN Light Green Dots */
+    background-color: var(--npt-white);
+    background-image: radial-gradient(var(--cfn-light-green) 1px, transparent 1px);
+    background-size: 24px 24px;
+    
+    color: var(--npt-black);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
-/* --- Header (Shared) --- */
 /* --- Header --- */
 .site-header {
     background-color: #ffffff;
-    /* CHANGED: Left padding set specifically to 45px */
     padding: 15px 45px; 
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
     height: 80px; 
     display: flex;
     align-items: center;
     position: relative;
-    z-index: 1100; /* Header stays ON TOP of ribbon */
+    z-index: 1100;
     width: 100%;
 }
 
 .logo-container {
     width: 100%;
-    /* CHANGED: Removed max-width restriction so it doesn't center */
     max-width: 100%; 
-    /* CHANGED: Removed auto margin to stop centering */
     margin: 0; 
     display: flex;
     justify-content: flex-start; 
@@ -50,7 +70,8 @@ body, html {
 
 /* --- Success Banner --- */
 .header-box {
-    background-color: #00a651; 
+    /* Brand Primary Color */
+    background-color: var(--cfn-green); 
     color: white;
     padding: 60px 20px;
     text-align: center;
@@ -59,18 +80,24 @@ body, html {
 }
 
 .header-box h1 {
+    /* Brand Heading Font */
+    font-family: 'Montserrat', sans-serif;
     margin: 0 0 10px 0;
     font-size: 2.5rem;
+    font-weight: 800;
 }
 
 .header-box p {
+    font-family: 'Open Sans', sans-serif;
     font-size: 1.2rem;
     margin: 0;
-    opacity: 0.9;
+    opacity: 0.95;
+    font-weight: 300;
 }
 
 #display-address {
     text-decoration: underline;
+    font-weight: 600;
 }
 
 /* --- Pricing Layout --- */
@@ -83,9 +110,7 @@ body, html {
     max-width: 1400px; 
     margin: 0 auto 60px auto;
     flex-wrap: wrap; 
-    /* Ensures this container takes available space but doesn't stretch weirdly */
     width: 100%;
-    /* box-sizing: border-box; -- Covered by global reset now */
 }
 
 .pricing-box {
@@ -110,6 +135,7 @@ body, html {
 }
 
 /* --- Popular Card Gold Effects --- */
+/* Kept Gold as requested, it works well with the Green */
 .pricing-box.popular {
     position: relative;
     background: white; 
@@ -149,10 +175,11 @@ body, html {
     transform: translate(-50%, -50%);
     background: linear-gradient(110deg, #d4af37 0%, #f9e076 20%, #d4af37 40%, #f9e076 60%, #d4af37 80%, #f9e076 100%);
     background-size: 200% 100%;
-    color: #333;
+    color: #141414; /* NPT Black for contrast on gold */
     padding: 8px 25px;
     border-radius: 20px;
-    font-weight: bold;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
     font-size: 0.9rem;
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     white-space: nowrap;
@@ -169,9 +196,10 @@ body, html {
 
 /* --- Card Content --- */
 .panel-heading {
+    font-family: 'Montserrat', sans-serif;
     font-size: 1.8rem;
     font-weight: 700;
-    color: #333;
+    color: var(--npt-black);
     margin-bottom: 20px;
 }
 
@@ -184,16 +212,18 @@ body, html {
 
 .price {
     display: block;
+    font-family: 'Montserrat', sans-serif;
     font-size: 3.5rem;
     font-weight: 800;
-    color: #00a651; 
+    color: var(--cfn-green); 
     line-height: 1;
 }
 
 .price small {
+    font-family: 'Open Sans', sans-serif;
     font-size: 1.1rem;
-    font-weight: normal;
-    color: #666;
+    font-weight: 600;
+    color: var(--npt-gray);
 }
 
 /* Promo Styling */
@@ -206,7 +236,7 @@ body, html {
 }
 
 .promo-price {
-    color: #dc2626; /* Red for deal */
+    color: #dc2626; 
     font-size: 3.8rem;
 }
 
@@ -220,6 +250,7 @@ body, html {
     display: inline-block;
     font-weight: bold;
     text-transform: uppercase;
+    font-family: 'Montserrat', sans-serif;
 }
 
 .promo-end-date {
@@ -229,7 +260,7 @@ body, html {
     font-weight: 600;
 }
 
-/* --- NEW: STICKERS STYLES --- */
+/* --- STICKERS STYLES (Rebranded to CFN Tints) --- */
 .stickers-container {
     display: flex;
     flex-direction: column;
@@ -239,9 +270,10 @@ body, html {
 }
 
 .sticker-badge {
-    background-color: #e0f2f1; /* Light Teal/Green */
-    color: #00695c;
-    border: 1px solid #b2dfdb;
+    /* Using a very light tint of CFN Green */
+    background-color: #e6f7ec; 
+    color: var(--cfn-dk-green);
+    border: 1px solid var(--cfn-light-green);
     padding: 6px 14px;
     border-radius: 20px;
     font-size: 0.95rem;
@@ -253,20 +285,21 @@ body, html {
 }
 
 .sticker-badge i {
-    color: #00a651;
+    color: var(--cfn-green);
 }
 /* ------------------------ */
 
 .speed-features {
+    font-family: 'Montserrat', sans-serif;
     font-size: 2rem;
-    font-weight: bold;
-    color: #333; 
+    font-weight: 800;
+    color: var(--npt-black); 
     margin-top: 15px;
 }
 
 .speed-capability {
     font-size: 1rem;
-    color: #777;
+    color: var(--npt-gray);
     margin-bottom: 30px;
     font-weight: 500;
 }
@@ -277,14 +310,14 @@ body, html {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    background-color: #f9f9f9;
+    background-color: var(--npt-white);
     padding: 15px;
     border-radius: 8px;
 }
 
 .highlight-text {
     font-weight: 600;
-    color: #555;
+    color: var(--npt-gray);
     font-size: 1.05rem;
     display: flex;
     align-items: center;
@@ -296,17 +329,18 @@ body, html {
     content: "\f00c"; 
     font-family: "Font Awesome 6 Free";
     font-weight: 900;
-    color: #00a651;
+    color: var(--cfn-green);
 }
 
 /* --- Buttons --- */
 .sign-up-btn {
-    background-color: #00a651;
+    background-color: var(--cfn-green);
     color: white;
     border: none;
     padding: 15px 30px;
     font-size: 1.2rem;
-    font-weight: bold;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
     border-radius: 6px;
     cursor: pointer;
     width: 100%;
@@ -315,14 +349,14 @@ body, html {
 }
 
 .sign-up-btn:hover {
-    background-color: #008c44;
+    background-color: var(--cfn-dk-green);
 }
 
 .pricing-box.popular .sign-up-btn {
-    background-color: #00a651; 
+    background-color: var(--cfn-green); 
 }
 .pricing-box.popular .sign-up-btn:hover {
-    background-color: #008c44; 
+    background-color: var(--cfn-dk-green); 
 }
 
 /* --- Broadband Facts FADE EFFECT --- */
@@ -335,6 +369,12 @@ body, html {
     overflow: hidden;
 }
 
+/* NOTE: Regulatory Broadband Labels typically require 
+   standard sans-serif fonts (Helvetica/Arial) to be compliant.
+   I have intentionally NOT changed the font-family inside 
+   the label wrapper to Montserrat to ensure FCC/Regulatory 
+   look-and-feel compliance.
+*/
 .broadband-facts-wrapper {
     background: white;
     text-align: left;
@@ -388,6 +428,8 @@ body, html {
     display: flex;
     align-items: center;
     gap: 5px;
+    /* Font updated for button specifically */
+    font-family: 'Open Sans', sans-serif;
 }
 
 .expand-label-btn:hover { background: #333; }
@@ -422,24 +464,24 @@ body, html {
     text-decoration: underline;
 }
 
-/* --- NEW: Main Page Footer --- */
+/* --- Footer --- */
 .footer-container {
     background-color: #ffffff;
     border-top: 1px solid #e0e0e0;
     padding: 40px 20px;
     text-align: center;
     width: 100%;
-    margin-top: auto; /* Pushes footer to bottom */
+    margin-top: auto;
 }
 
 .footer-container p {
     margin: 8px 0;
-    color: #666;
+    color: var(--npt-gray);
     font-size: 0.9rem;
 }
 
 .footer-container a {
-    color: #00a651;
+    color: var(--cfn-green);
     text-decoration: none;
     font-weight: 600;
     margin: 0 10px;
@@ -447,7 +489,7 @@ body, html {
 }
 
 .footer-container a:hover {
-    color: #008c44;
+    color: var(--cfn-dk-green);
     text-decoration: underline;
 }
 

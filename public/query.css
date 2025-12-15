@@ -1,3 +1,22 @@
+/* --- Fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@300;400;600;700&display=swap');
+
+/* --- Brand Variables --- */
+:root {
+    /* CFN Colors */
+    --cfn-green: #03A63C;
+    --cfn-dk-green: #0B8C38;
+    --cfn-mute-green: #46A66F;
+    --cfn-light-green: #8BD9AD;
+    
+    /* NPTech Colors */
+    --npt-blue: #0663AF;
+    --npt-lt-blue: #64ADD9;
+    --npt-gray: #4D4D4F;
+    --npt-white: #F2F2F2;
+    --npt-black: #141414;
+}
+
 * {
     box-sizing: border-box;
 }
@@ -5,39 +24,40 @@
 body, html {
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    /* Subtle background pattern for professionalism */
-    background-color: #f0fdf4; /* Very light mint tint */
-    background-image: radial-gradient(#dcfce7 1px, transparent 1px);
+    /* Applied Brand Body Font */
+    font-family: 'Open Sans', 'Segoe UI', sans-serif; 
+    
+    /* Updated Background to NPT White with CFN Light Green pattern */
+    background-color: var(--npt-white); 
+    background-image: radial-gradient(var(--cfn-light-green) 1px, transparent 1px);
     background-size: 24px 24px;
+    
     height: 100%;
     display: flex;
     flex-direction: column;
+    color: var(--npt-black);
 }
 
 /* --- Header --- */
 .site-header {
     background-color: #ffffff;
-    /* Fixed: 45px padding from left */
     padding: 15px 45px; 
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
     height: 80px; 
     display: flex;
     align-items: center;
     position: relative;
-    z-index: 1100; /* Header stays ON TOP of ribbon */
+    z-index: 1100;
     width: 100%;
 }
 
 .logo-container {
     width: 100%;
-    /* Fixed: Left alignment with no centering */
     max-width: 100%; 
     margin: 0; 
     display: flex;
     justify-content: flex-start; 
     align-items: center;
-    /* Fixed: Tab-width gap */
     gap: 50px; 
 }
 
@@ -47,16 +67,18 @@ body, html {
     display: block;
 }
 
-/* --- Celebration Ribbon (Left Sidebar) --- */
+/* --- Celebration Ribbon (NPTech Branding) --- */
 .celebration-ribbon {
     position: absolute; 
     left: 20px; 
     top: 0;
     height: 100%; 
-    /* Fixed: Min-height to prevent overlap on small screens */
     min-height: 600px; 
     width: 240px; 
-    background: linear-gradient(160deg, #1e3a8a 0%, #2563eb 100%); 
+    
+    /* Applied NPTech Gradient (Blue to LtBlue) */
+    background: linear-gradient(160deg, var(--npt-blue) 0%, var(--npt-lt-blue) 100%); 
+    
     color: white;
     padding: 100px 20px 50px 20px; 
     display: flex;
@@ -64,14 +86,11 @@ body, html {
     align-items: center;
     text-align: center;
     z-index: 1000; 
-    
-    /* "M" / Swallowtail Cut at Bottom */
     clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 95%, 0 100%);
-    
     filter: drop-shadow(4px 4px 15px rgba(0,0,0,0.4));
 }
 
-/* Badge Container - WAX SEAL / BANNER STYLE */
+/* Badge Container */
 .ribbon-badge {
     position: relative;
     width: 140px; 
@@ -83,9 +102,10 @@ body, html {
     flex-shrink: 0; 
 }
 
-/* Gold Circle for Logo -> Embossed Coin/Seal Look */
+/* Logo Circle */
 .logo-circle {
-    background: radial-gradient(circle, #14289c, #4b4444); 
+    /* Updated gradient to use NPT Blue tones inside the gold seal */
+    background: radial-gradient(circle, var(--npt-blue), var(--npt-black)); 
     border-radius: 50%;
     width: 100%;
     height: 100%;
@@ -94,7 +114,7 @@ body, html {
     align-items: center;
     padding: 12px; 
     
-    /* 3D Embossed Effect Frame */
+    /* Kept Gold border as it signifies "Premium/Investment" */
     border: 3px solid #d4af37; 
     box-shadow: 
         inset 2px 2px 5px rgba(0,0,0,0.2), 
@@ -106,7 +126,7 @@ body, html {
     overflow: hidden;
 }
 
-/* Shimmer Overlay on the Seal */
+/* Shimmer Overlay */
 .logo-circle::after {
     content: "";
     position: absolute;
@@ -153,7 +173,6 @@ body, html {
     border-radius: 4px;
 }
 
-
 .ribbon-logo {
     width: 100%;
     height: auto;
@@ -183,12 +202,13 @@ body, html {
 }
 
 .celebration-title {
-    font-family: 'Georgia', serif;
+    /* Brand Heading Font */
+    font-family: 'Montserrat', sans-serif;
     font-size: 1.8rem; 
     color: #ffd700; 
     margin: 0 0 8px 0;
     text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    font-weight: bold;
+    font-weight: 700;
 }
 
 .ribbon-content p {
@@ -207,7 +227,7 @@ body, html {
 }
 
 .ribbon-footer {
-    margin-top: auto; /* Push to bottom */
+    margin-top: auto; 
     padding-top: 25px;
     border-top: 1px solid rgba(255,255,255,0.2);
     width: 100%;
@@ -224,7 +244,7 @@ body, html {
 }
 
 .slogan {
-    font-family: 'Georgia', serif;
+    font-family: 'Montserrat', sans-serif; /* Tagline font */
     font-style: italic;
     font-size: 0.9rem; 
     opacity: 0.9;
@@ -241,11 +261,6 @@ body, html {
     padding: 30px 20px; 
     position: relative; 
     width: 100%; 
-}
-
-/* --- Responsive Adjustments --- */
-@media (min-width: 1200px) {
-    /* No special offset logic needed as per user preference, keep centered */
 }
 
 @media (max-width: 1199px) {
@@ -276,14 +291,17 @@ body, html {
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 6px; 
-    background: linear-gradient(90deg, #00a651, #10b981);
+    /* Gradient using CFN Green & Light Green */
+    background: linear-gradient(90deg, var(--cfn-green), var(--cfn-light-green));
 }
 
 .card h1 {
+    /* Brand Heading Font */
+    font-family: 'Montserrat', sans-serif;
     font-size: 2.8rem; 
     margin-bottom: 15px;
     font-weight: 800;
-    color: #111827; 
+    color: var(--npt-black); 
     letter-spacing: -0.5px;
     line-height: 1.1;
 }
@@ -292,20 +310,21 @@ body, html {
     font-size: 1.1rem; 
     line-height: 1.5;
     margin-bottom: 40px;
-    color: #4b5563; 
+    color: var(--npt-gray); 
     max-width: 600px; 
     margin-left: auto;
     margin-right: auto;
 }
 
-/* --- Search Container (Query Page) --- */
+/* --- Search Container (CFN Styling) --- */
 .search-container {
     display: flex;
     gap: 12px; 
     max-width: 700px; 
     margin: 0 auto;
-    background-color: #446b50; 
-    border: 1px solid #07a152; 
+    /* Uses CFN Mute Green for background */
+    background-color: var(--cfn-mute-green); 
+    border: 1px solid var(--cfn-green); 
     padding: 15px; 
     border-radius: 16px; 
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.03); 
@@ -321,7 +340,7 @@ body, html {
     left: 20px; 
     top: 50%;
     transform: translateY(-50%);
-    color: #9ca3af;
+    color: var(--npt-gray);
     font-size: 1.1rem; 
 }
 
@@ -331,21 +350,24 @@ body, html {
     font-size: 1.1rem; 
     padding: 16px 20px 16px 50px; 
     border-radius: 12px; 
-    color: #1f2937;
+    color: var(--npt-black);
     outline: none;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     background-color: #ffffff; 
     box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    font-family: 'Open Sans', sans-serif;
 }
 
 #address-input:focus {
     background-color: #fff;
-    border-color: #00a651;
-    box-shadow: 0 0 0 4px rgba(0, 166, 81, 0.15); 
+    /* Focus color updated to CFN Green */
+    border-color: var(--cfn-green);
+    box-shadow: 0 0 0 4px rgba(3, 166, 60, 0.15); 
 }
 
 #check-btn {
-    background-color: #00a651; 
+    /* Primary Action: CFN Green */
+    background-color: var(--cfn-green); 
     color: white;
     border: none;
     padding: 0 35px; 
@@ -355,16 +377,18 @@ body, html {
     cursor: pointer;
     white-space: nowrap;
     transition: all 0.2s;
-    box-shadow: 0 8px 16px rgba(0, 166, 81, 0.2); 
+    box-shadow: 0 8px 16px rgba(3, 166, 60, 0.2); 
+    font-family: 'Montserrat', sans-serif;
 }
 
 #check-btn:hover {
-    background-color: #008c44;
+    /* Hover: CFN Dark Green */
+    background-color: var(--cfn-dk-green);
     transform: translateY(-2px);
-    box-shadow: 0 12px 24px rgba(0, 166, 81, 0.3);
+    box-shadow: 0 12px 24px rgba(3, 166, 60, 0.3);
 }
 
-/* --- Lead Form Styles (Sorry Page) --- */
+/* --- Lead Form Styles --- */
 .contact-form {
     text-align: left;
     max-width: 500px;
@@ -379,7 +403,8 @@ body, html {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
-    color: #374151;
+    color: var(--npt-gray);
+    font-family: 'Montserrat', sans-serif;
 }
 
 .form-group input {
@@ -388,41 +413,43 @@ body, html {
     border: 2px solid #e5e7eb;
     border-radius: 10px;
     font-size: 1rem;
-    color: #1f2937;
+    color: var(--npt-black);
     outline: none;
     transition: border-color 0.2s;
+    font-family: 'Open Sans', sans-serif;
 }
 
 .form-group input:focus {
-    border-color: #00a651;
-    box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.1);
+    border-color: var(--cfn-green);
+    box-shadow: 0 0 0 3px rgba(3, 166, 60, 0.1);
 }
 
 .form-group input:disabled {
-    background-color: #f3f4f6;
+    background-color: var(--npt-white);
     cursor: not-allowed;
     color: #6b7280;
 }
 
 #submit-lead-btn {
     width: 100%;
-    background-color: #00a651;
+    background-color: var(--cfn-green);
     color: white;
     border: none;
     padding: 15px;
-    font-size: 1.1rem;
+    font-size: 1.1rem; 
     font-weight: 700;
-    border-radius: 12px;
+    border-radius: 12px; 
     cursor: pointer;
     transition: all 0.2s;
     margin-top: 10px;
-    box-shadow: 0 4px 6px rgba(0, 166, 81, 0.2);
+    box-shadow: 0 4px 6px rgba(3, 166, 60, 0.2);
+    font-family: 'Montserrat', sans-serif;
 }
 
 #submit-lead-btn:hover:not(:disabled) {
-    background-color: #008c44;
+    background-color: var(--cfn-dk-green);
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 166, 81, 0.3);
+    box-shadow: 0 6px 12px rgba(3, 166, 60, 0.3);
 }
 
 #submit-lead-btn:disabled {
@@ -443,7 +470,7 @@ body, html {
     margin-top: 35px; 
     padding-top: 25px; 
     border-top: 1px dashed #e5e7eb;
-    color: #6b7280;
+    color: var(--npt-gray);
 }
 
 .business-inquiry p {
@@ -458,7 +485,7 @@ body, html {
 }
 
 .business-inquiry a {
-    color: #00a651;
+    color: var(--cfn-green);
     font-weight: 600;
     text-decoration: none;
     border-bottom: 2px solid transparent;
@@ -466,11 +493,12 @@ body, html {
 }
 
 .business-inquiry a:hover {
-    color: #008c44;
-    border-bottom-color: #008c44;
+    color: var(--cfn-dk-green);
+    border-bottom-color: var(--cfn-dk-green);
 }
 
 /* --- Unavailable State Overrides --- */
+/* Kept Red as standard UI for "Stop/No" but fonts updated */
 .card.unavailable {
     border-top: none; 
 }
@@ -499,12 +527,12 @@ body, html {
 
 .footer-container p {
     margin: 8px 0;
-    color: #9ca3af;
+    color: var(--npt-gray);
     font-size: 0.9rem;
 }
 
 .footer-container a {
-    color: #6b7280;
+    color: var(--npt-gray);
     text-decoration: none;
     font-weight: 500;
     margin: 0 12px;
@@ -512,7 +540,7 @@ body, html {
 }
 
 .footer-container a:hover {
-    color: #00a651;
+    color: var(--cfn-green);
 }
 
 /* --- Result Area --- */
@@ -536,6 +564,7 @@ body, html {
 }
 
 #result-status {
+    font-family: 'Montserrat', sans-serif;
     font-size: 2rem; 
     margin-bottom: 10px;
     font-weight: 800;
@@ -549,19 +578,20 @@ body, html {
     margin-top: 25px;
     background: white;
     border: 2px solid #e5e7eb;
-    color: #4b5563;
+    color: var(--npt-gray);
     padding: 12px 30px; 
     font-size: 1rem; 
     font-weight: 600;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s;
+    font-family: 'Open Sans', sans-serif;
 }
 
 #reset-btn:hover {
     border-color: #d1d5db;
     background-color: #f9fafb;
-    color: #1f2937;
+    color: var(--npt-black);
     transform: translateY(-2px);
 }
 
@@ -569,9 +599,9 @@ body, html {
 .pac-container {
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.12);
-    border: 1px solid #f3f4f6;
+    border: 1px solid var(--npt-white);
     margin-top: 8px;
-    font-family: 'Segoe UI', sans-serif;
+    font-family: 'Open Sans', sans-serif;
     overflow: hidden; 
 }
 .pac-item {
@@ -580,8 +610,9 @@ body, html {
     cursor: pointer;
     border-top: 1px solid #f9fafb;
 }
-.pac-item:hover { background-color: #f0fdf4; }
-.pac-item-query { font-size: 1rem; color: #111827; font-weight: 600; }
+/* Hover in dropdown uses light tint of CFN Green */
+.pac-item:hover { background-color: #e6f7ec; }
+.pac-item-query { font-size: 1rem; color: var(--npt-black); font-weight: 600; }
 
 /* --- Mobile Responsiveness --- */
 @media (max-width: 900px) {

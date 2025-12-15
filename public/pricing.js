@@ -285,8 +285,8 @@ function renderPlans(plans, address, campaignId, campaignName) {
                     <div class="speed-capability">Download & Upload</div>
                     <div class="core-benefits">
                         <span class="highlight-text">Local Service</span>
-                        <span class="highlight-text">Lifetime Price Lock</span>               
-                        <span class="highlight-text">No Contracts</span>
+                        <span class="highlight-text">No Contracts</span>               
+                        <span class="highlight-text">No Data Caps</span>
 
                     </div>
                     <button class="sign-up-btn">Select Plan</button>
