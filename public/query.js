@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+// FIX: Imported signInAnonymously
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- CONFIGURATION ---
@@ -18,6 +19,11 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app); 
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'nptel-map-portal';
+
+// FIX: Automatically sign in anonymously so we can write to 'service_requests'
+signInAnonymously(auth).catch((error) => {
+    console.warn("Anonymous auth failed. Logging may not work.", error);
+});
 
 // State
 let map;

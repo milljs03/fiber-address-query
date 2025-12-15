@@ -110,7 +110,13 @@ onAuthStateChanged(auth, (user) => {
         loginScreen.style.display = 'none';
         appContainer.style.display = 'flex'; 
         userDisplay.textContent = user.email;
-        isUserAdmin = (user.email.toLowerCase() === 'jmiller@nptel.com' || 'ppenrose@nptel.com');
+
+        // --- SECURITY FIX: CORRECT COMPARISON ---
+        const email = user.email.toLowerCase();
+        // NOTE: While we allow UI access to 'ppenrose', your Firestore Rules currently 
+        // restrict WRITE access to 'jmiller' only. 'ppenrose' will see buttons but writes may fail.
+        isUserAdmin = (email === 'jmiller@nptel.com' || email === 'ppenrose@nptel.com');
+        // ----------------------------------------
         
         initTabs();
         loadAnalyticsData(); 

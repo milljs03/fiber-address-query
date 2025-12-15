@@ -3,15 +3,48 @@ const logger = require("firebase-functions/logger");
 const nodemailer = require("nodemailer");
 const axios = require("axios");
 const admin = require("firebase-admin");
-const cors = require('cors')({ origin: true });
 
 const { defineSecret } = require('firebase-functions/params');
+
+// --- SECURITY FIX: RESTRICT CORS ---
+// Allow your production app and localhost for testing
+const allowedOrigins = [
+    'https://fiber-service-query.firebaseapp.com', 
+    'https://fiber-service-query.web.app',
+    'http://localhost:5000',
+    'http://127.0.0.1:5000'
+];
+
+const cors = require('cors')({
+  origin: function(origin, callback){
+    // allow requests with no origin (like mobile apps or curl requests)
+    if(!origin) return callback(null, true);
+    if(allowedOrigins.indexOf(origin) === -1){
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  }
+});
+// -----------------------------------
 
 // 1. Define secrets globally (Correct)
 const gmailPassword = defineSecret('GMAIL_PASSWORD');
 const recaptchaSecret = defineSecret('RECAPTCHA_SECRET');
 
 admin.initializeApp();
+
+// --- SECURITY FIX: HTML SANITIZATION ---
+function escapeHtml(text) {
+  if (!text) return "";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+// ---------------------------------------
 
 exports.createOrderSecure = onRequest(
     // 2. Allow access to secrets here
@@ -77,17 +110,25 @@ exports.createOrderSecure = onRequest(
                         }
                     });
                     
+                    // --- SECURITY FIX: Sanitize Inputs ---
+                    const safeName = escapeHtml(data.orderDetails.name);
+                    const safePhone = escapeHtml(data.orderDetails.phone);
+                    const safeEmail = escapeHtml(data.orderDetails.email);
+                    const safeAddress = escapeHtml(data.orderDetails.address);
+                    const safePlan = escapeHtml(data.orderDetails.planDetails || data.orderDetails.plan);
+                    // -------------------------------------
+
                     await transporter.sendMail({
                         from: '"Fiber Bot" <jmiller@nptel.com>',
                         to: "jmiller@nptel.com, ppenrose@nptel.com, dneff@nptel.com, sbechler@nptel.com",
-                        subject: `New Fiber Order: ${data.orderDetails.name}`,
+                        subject: `New Fiber Order: ${safeName}`, // Safe
                         html: `
                             <h2>New Secure Order Received</h2>
-                            <p><strong>Name:</strong> ${data.orderDetails.name}</p>
-                            <p><strong>Phone:</strong> ${data.orderDetails.phone}</p>
-                            <p><strong>Email:</strong> ${data.orderDetails.email}</p>
-                            <p><strong>Address:</strong> ${data.orderDetails.address}</p>
-                            <p><strong>Plan:</strong> ${data.orderDetails.planDetails || data.orderDetails.plan}</p>
+                            <p><strong>Name:</strong> ${safeName}</p>
+                            <p><strong>Phone:</strong> ${safePhone}</p>
+                            <p><strong>Email:</strong> ${safeEmail}</p>
+                            <p><strong>Address:</strong> ${safeAddress}</p>
+                            <p><strong>Plan:</strong> ${safePlan}</p>
                             <hr>
                             <p><em>Verified via ReCAPTCHA</em></p>
                         `
