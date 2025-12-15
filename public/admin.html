@@ -7,9 +7,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="icon" type="image/png" href="/favicon.png">
     <style>
-       /* Local overrides if needed */
+       /* Local overrides */
        #campaign-selector-wrapper { display: none; margin-left: 10px; border-left: 1px solid #ccc; padding-left: 10px; align-items: center; gap: 5px; }
        #campaign-select { padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
+       
+       /* New Card Style for Queries */
+       .teal-card { border-left: 4px solid #17a2b8; background: #e0f7fa; }
+       .teal-card .icon-box { background: #b2ebf2; color: #17a2b8; }
     </style>
   </head>
   <body>
@@ -83,10 +87,7 @@
                       <div class="icon-box"><i class="fa-solid fa-cart-shopping"></i></div>
                       <div class="stat-info"><h3 id="stat-total-label">Total Orders</h3><p id="stat-total-val">--</p></div>
                   </div>
-                  <div class="stat-card orange-card">
-                       <div class="icon-box"><i class="fa-solid fa-clock"></i></div>
-                       <div class="stat-info"><h3>Pending</h3><p id="stat-pending-val">--</p></div>
-                  </div>
+
                   <div class="stat-card green-card">
                       <div class="icon-box"><i class="fa-solid fa-check-circle"></i></div>
                       <div class="stat-info"><h3>Serviceable</h3><p id="stat-serviceable-val">--</p></div>
@@ -94,6 +95,11 @@
                   <div class="stat-card purple-card">
                       <div class="icon-box"><i class="fa-solid fa-bullseye"></i></div>
                       <div class="stat-info"><h3>Conversion</h3><p id="stat-conversion-val">--%</p></div>
+                  </div>
+                  <!-- NEW CARD: Total Unique Queries -->
+                  <div class="stat-card teal-card">
+                      <div class="icon-box"><i class="fa-solid fa-magnifying-glass-location"></i></div>
+                      <div class="stat-info"><h3>Unique Queries</h3><p id="stat-queries-val">--</p></div>
                   </div>
               </div>
 
@@ -113,6 +119,9 @@
                       <h2>Recent Orders</h2>
                       <div class="header-actions">
                           <button id="export-orders-btn" class="action-btn small"><i class="fa-solid fa-file-csv"></i> Export Orders</button>
+                          
+                          <button id="export-leads-btn" class="action-btn small" style="color: #d32f2f; border-color: #d32f2f; background: #fff0f0;"><i class="fa-solid fa-user-clock"></i> Export Leads</button>
+                          
                           <button id="export-activity-btn" class="action-btn small"><i class="fa-solid fa-list"></i> Export Activity</button>
                           <button id="refresh-data-btn" class="icon-btn" title="Refresh Data"><i class="fa-solid fa-arrows-rotate"></i></button>
                       </div>
@@ -153,7 +162,7 @@
                                 <label>Campaign Name</label>
                                 <input type="text" id="camp-name" placeholder="e.g. Summer Sale 2024" required>
                             </div>
-                            <!-- NEW: Expiration Date Input -->
+                            <!-- Expiration Date Input -->
                             <div class="form-col">
                                 <label>Expires On (Optional)</label>
                                 <input type="date" id="camp-expires" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">

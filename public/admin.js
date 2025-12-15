@@ -48,6 +48,37 @@ const btnCreateCampaign = document.getElementById('btn-create-campaign');
 const btnCloseModal = document.getElementById('btn-close-modal');
 const btnCancelModal = document.getElementById('btn-cancel-modal');
 
+// --- HELPER: DEDUPLICATE BY ADDRESS ---
+function getUniqueByAddress(items, addressKey = 'address', dateKey = null) {
+    const seen = new Set();
+    const unique = [];
+    
+    // 1. Sort descending by date (Newest first) so we keep the latest entry
+    if (dateKey) {
+        items.sort((a, b) => {
+            const dateA = a[dateKey] && a[dateKey].toDate ? a[dateKey].toDate() : (a[dateKey] ? new Date(a[dateKey]) : new Date(0));
+            const dateB = b[dateKey] && b[dateKey].toDate ? b[dateKey].toDate() : (b[dateKey] ? new Date(b[dateKey]) : new Date(0));
+            return dateB - dateA;
+        });
+    }
+
+    // 2. Filter duplicates
+    for (const item of items) {
+        const addr = item[addressKey] ? item[addressKey].toString().trim().toLowerCase() : null;
+        if (addr) {
+            if (!seen.has(addr)) {
+                seen.add(addr);
+                unique.push(item);
+            }
+        } else {
+            // Include items without address (e.g. data errors or non-address entries) 
+            // as they are not "duplicate addresses" technically.
+            unique.push(item); 
+        }
+    }
+    return unique;
+}
+
 // --- AUTH LOGIC ---
 const initAuth = async () => {
     try {
@@ -87,6 +118,14 @@ onAuthStateChanged(auth, (user) => {
         // Listeners
         document.getElementById('export-orders-btn').addEventListener('click', exportOrdersToCSV);
         document.getElementById('export-activity-btn').addEventListener('click', exportActivityToCSV);
+        
+        // --- NEW: LEAD EXPORT LISTENER ---
+        const exportLeadsBtn = document.getElementById('export-leads-btn');
+        if (exportLeadsBtn) {
+            exportLeadsBtn.addEventListener('click', exportLeadsToCSV);
+        }
+        // ---------------------------------
+
         document.getElementById('campaign-form').addEventListener('submit', handleCampaignSave);
         document.getElementById('add-plan-btn').addEventListener('click', () => addPlanRow());
         
@@ -464,18 +503,17 @@ async function loadAnalyticsData() {
 
         // Fetch Orders
         const ordersSnap = await getDocs(collection(db,'artifacts',appId,'public','data','orders'));
-        const orders = [];
-        const uniqueOrderAddresses = new Set();
-        const planCounts = {};
-        let pendingCount = 0;
-
+        let rawOrders = [];
         ordersSnap.forEach(doc => {
-            const data = doc.data();
-            data.id = doc.id;
-            orders.push(data);
-            
-            if(data.status === 'pending') pendingCount++;
-            if(data.address) uniqueOrderAddresses.add(data.address.trim().toLowerCase());
+            rawOrders.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Deduplicate Orders
+        const uniqueOrders = getUniqueByAddress(rawOrders, 'address', 'submittedAt');
+
+        const planCounts = {};
+
+        uniqueOrders.forEach(data => {
             
             // Normalize plan names for chart
             let pName = data.plan || 'Unknown';
@@ -486,42 +524,54 @@ async function loadAnalyticsData() {
 
         // Fetch Checks
         const checksSnap = await getDocs(collection(db,'artifacts',appId,'public','data','service_requests'));
-        const uniqueAvailableAddresses = new Set();
-        const uniqueUnavailableAddresses = new Set();
-        
+        let rawChecks = [];
         checksSnap.forEach(doc => {
-            const data = doc.data();
+            rawChecks.push(doc.data());
+        });
+
+        // Deduplicate Checks
+        const uniqueChecks = getUniqueByAddress(rawChecks, 'address', 'checkedAt'); 
+
+        let uniqueAvailableCount = 0;
+        let uniqueUnavailableCount = 0;
+        const uniqueAvailableAddresses = new Set(); 
+
+        uniqueChecks.forEach(data => {
             if(data.address){
                 const normAddr = data.address.trim().toLowerCase();
-                if(data.isAvailable) uniqueAvailableAddresses.add(normAddr);
-                else uniqueUnavailableAddresses.add(normAddr);
+                if(data.isAvailable) {
+                    uniqueAvailableCount++;
+                    uniqueAvailableAddresses.add(normAddr);
+                } else {
+                    uniqueUnavailableCount++;
+                }
             }
         });
 
-        const totalUniqueChecks = uniqueAvailableAddresses.size + uniqueUnavailableAddresses.size;
+        const uniqueOrderAddresses = new Set(uniqueOrders.map(o => o.address ? o.address.trim().toLowerCase() : ''));
+        
         let unconvertedLeads = 0;
         uniqueAvailableAddresses.forEach(addr => {
             if(!uniqueOrderAddresses.has(addr)) unconvertedLeads++;
         });
 
-        const conversionRate = uniqueAvailableAddresses.size > 0 ? 
-            ((uniqueOrderAddresses.size / uniqueAvailableAddresses.size) * 100).toFixed(1) : 0;
+        const conversionRate = uniqueAvailableCount > 0 ? 
+            ((uniqueOrders.length / uniqueAvailableCount) * 100).toFixed(1) : 0;
 
         updateDashboardUI({
-            totalOrders: orders.length,
-            pendingCount,
-            totalUniqueChecks,
-            uniqueAvailable: uniqueAvailableAddresses.size,
-            uniqueUnavailable: uniqueUnavailableAddresses.size,
+            totalOrders: uniqueOrders.length,
+            totalUniqueChecks: uniqueChecks.length,
+            uniqueAvailable: uniqueAvailableCount,
+            uniqueUnavailable: uniqueUnavailableCount,
             unconvertedLeads,
             conversionRate,
             planCounts
         });
 
-        renderCharts(planCounts, { available: uniqueAvailableAddresses.size, unavailable: uniqueUnavailableAddresses.size });
+        renderCharts(planCounts, { available: uniqueAvailableCount, unavailable: uniqueUnavailableCount });
 
-        orders.sort((a,b) => (b.submittedAt?.seconds || 0) - (a.submittedAt?.seconds || 0));
-        renderOrdersTable(orders);
+        // Table uses uniqueOrders (already sorted by date desc in helper)
+        renderOrdersTable(uniqueOrders);
 
         if(refreshBtn) refreshBtn.classList.remove('fa-spin');
 
@@ -530,15 +580,154 @@ async function loadAnalyticsData() {
     }
 }
 
-async function exportOrdersToCSV() { if(!confirm("Download Orders Report?")) return; try { const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'orders')); let csvContent = "data:text/csv;charset=utf-8,"; csvContent += "Date,Name,Email,Phone,Address,Plan,Status\n"; snapshot.forEach(doc => { const data = doc.data(); const date = data.submittedAt && data.submittedAt.toDate ? data.submittedAt.toDate().toLocaleString() : ''; const row = [ `"${date}"`, `"${data.name || ''}"`, `"${data.email || ''}"`, `"${data.phone || ''}"`, `"${data.address || ''}"`, `"${data.plan || ''}"`, `"${data.status || 'pending'}"` ].join(","); csvContent += row + "\n"; }); const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", `orders_report_${new Date().toISOString().split('T')[0]}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); } catch (e) { console.error("Export Error:", e); alert("Failed to export orders."); } }
+async function exportOrdersToCSV() { 
+    if(!confirm("Download Orders Report (Unique Addresses Only)?")) return; 
+    try { 
+        const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'orders')); 
+        let rawOrders = [];
+        snapshot.forEach(doc => rawOrders.push({ ...doc.data() })); 
+        
+        const uniqueOrders = getUniqueByAddress(rawOrders, 'address', 'submittedAt');
 
-async function exportActivityToCSV() { if(!confirm("Download Activity Log? (This may take a moment)")) return; try { const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'service_requests')); let csvContent = "data:text/csv;charset=utf-8,"; csvContent += "Date,Address,Service Available,Coordinates\n"; snapshot.forEach(doc => { const data = doc.data(); const date = data.checkedAt && data.checkedAt.toDate ? data.checkedAt.toDate().toLocaleString() : ''; const coords = data.location ? `${data.location.lat}, ${data.location.lng}` : ''; const row = [ `"${date}"`, `"${data.address || ''}"`, `"${data.isAvailable ? 'YES' : 'NO'}"`, `"${coords}"` ].join(","); csvContent += row + "\n"; }); const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", `activity_log_${new Date().toISOString().split('T')[0]}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); } catch (e) { console.error("Export Error:", e); alert("Failed to export activity log."); } }
+        let csvContent = "data:text/csv;charset=utf-8,"; 
+        csvContent += "Date,Name,Email,Phone,Address,Plan,Status\n"; 
+        
+        uniqueOrders.forEach(data => { 
+            const date = data.submittedAt && data.submittedAt.toDate ? data.submittedAt.toDate().toLocaleString() : ''; 
+            const row = [ 
+                `"${date}"`, 
+                `"${data.name || ''}"`, 
+                `"${data.email || ''}"`, 
+                `"${data.phone || ''}"`, 
+                `"${data.address || ''}"`, 
+                `"${data.plan || ''}"`, 
+
+            ].join(","); 
+            csvContent += row + "\n"; 
+        }); 
+        
+        const encodedUri = encodeURI(csvContent); 
+        const link = document.createElement("a"); 
+        link.setAttribute("href", encodedUri); 
+        link.setAttribute("download", `orders_report_unique_${new Date().toISOString().split('T')[0]}.csv`); 
+        document.body.appendChild(link); 
+        link.click(); 
+        document.body.removeChild(link); 
+    } catch (e) { 
+        console.error("Export Error:", e); 
+        alert("Failed to export orders."); 
+    } 
+}
+
+async function exportActivityToCSV() { 
+    if(!confirm("Download Activity Log (Unique Addresses Only)?")) return; 
+    try { 
+        const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'service_requests')); 
+        let rawChecks = [];
+        snapshot.forEach(doc => rawChecks.push(doc.data()));
+        
+        const uniqueChecks = getUniqueByAddress(rawChecks, 'address', 'checkedAt');
+
+        let csvContent = "data:text/csv;charset=utf-8,"; 
+        csvContent += "Date,Address,Service Available,Coordinates\n"; 
+        
+        uniqueChecks.forEach(data => { 
+            let dateObj = data.checkedAt || data.submittedAt;
+            const date = dateObj && dateObj.toDate ? dateObj.toDate().toLocaleString() : ''; 
+            const coords = data.location ? `${data.location.lat}, ${data.location.lng}` : ''; 
+            const row = [ 
+                `"${date}"`, 
+                `"${data.address || ''}"`, 
+                `"${data.isAvailable ? 'YES' : 'NO'}"`, 
+                `"${coords}"` 
+            ].join(","); 
+            csvContent += row + "\n"; 
+        }); 
+        
+        const encodedUri = encodeURI(csvContent); 
+        const link = document.createElement("a"); 
+        link.setAttribute("href", encodedUri); 
+        link.setAttribute("download", `activity_log_unique_${new Date().toISOString().split('T')[0]}.csv`); 
+        document.body.appendChild(link); 
+        link.click(); 
+        document.body.removeChild(link); 
+    } catch (e) { 
+        console.error("Export Error:", e); 
+        alert("Failed to export activity log."); 
+    } 
+}
+
+// --- NEW FUNCTION: Export Leads from Sorry Page ---
+async function exportLeadsToCSV() {
+    if (!confirm("Download 'Sorry Page' Leads Report (Unique Addresses Only)?")) return;
+
+    try {
+        const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'service_requests'));
+        let rawLeads = [];
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            // Filter initially for lead types
+            if (data.type === 'manual_check' || (data.name && (data.phone || data.email))) {
+                rawLeads.push(data);
+            }
+        });
+
+        // Deduplicate leads
+        const uniqueLeads = getUniqueByAddress(rawLeads, 'address', 'submittedAt');
+        
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Date,Name,Phone,Email,Address,Type\n";
+
+        if (uniqueLeads.length === 0) {
+            alert("No leads found.");
+            return;
+        }
+
+        uniqueLeads.forEach(data => {
+            let dateStr = '';
+            if (data.submittedAt) {
+                dateStr = data.submittedAt.toDate ? data.submittedAt.toDate().toLocaleString() : new Date(data.submittedAt).toLocaleString();
+            } else if (data.checkedAt) {
+                dateStr = data.checkedAt.toDate ? data.checkedAt.toDate().toLocaleString() : new Date(data.checkedAt).toLocaleString();
+            }
+
+            const safe = (str) => `"${(str || '').replace(/"/g, '""')}"`;
+
+            const row = [
+                safe(dateStr),
+                safe(data.name),
+                safe(data.phone),
+                safe(data.email),
+                safe(data.address),
+                safe('Unserviceable Lead')
+            ].join(",");
+
+            csvContent += row + "\n";
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `leads_report_unique_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+    } catch (e) {
+        console.error("Export Error:", e);
+        alert("Failed to export leads.");
+    }
+}
 
 function updateDashboardUI(stats) {
     document.getElementById('stat-total-val').textContent = stats.totalOrders;
-    document.getElementById('stat-pending-val').textContent = stats.pendingCount;
     document.getElementById('stat-serviceable-val').textContent = stats.uniqueAvailable;
     document.getElementById('stat-conversion-val').textContent = stats.conversionRate + '%';
+    // Update the new Query Stat
+    if(document.getElementById('stat-queries-val')) {
+        document.getElementById('stat-queries-val').textContent = stats.totalUniqueChecks;
+    }
 }
 
 function renderCharts(planCounts, availabilityStats) {
