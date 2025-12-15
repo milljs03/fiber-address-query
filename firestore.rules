@@ -22,17 +22,20 @@ service cloud.firestore {
 
     // 2. Service Requests (Public Create, Any Staff Read)
     match /artifacts/{appId}/public/data/service_requests/{docId} {
-      // FIX: Require valid authentication (even anonymous) to prevent unauthenticated spam
-      // This works in tandem with the updated public/query.js which now performs anonymous login.
+      // Require valid authentication (even anonymous) to prevent unauthenticated spam
       allow create: if request.auth != null;
       
       // Allow read for ANY authenticated user with an @nptel.com email
       allow read: if isStaff();
     }
 
-    // 3. Orders (Public Create, Any Staff Read, Admin Update/Delete)
+    // 3. Orders (NO PUBLIC WRITE - Function Only, Any Staff Read, Admin Update/Delete)
     match /artifacts/{appId}/public/data/orders/{docId} {
-      allow create: if true;
+      // SECURITY FIX: Deny client-side creation. 
+      // The Cloud Function uses Admin SDK which bypasses this rule, 
+      // ensuring all orders MUST go through the secure function.
+      allow create: if false; 
+      
       allow read: if isStaff();
       allow update, delete: if isAdmin();
     }
