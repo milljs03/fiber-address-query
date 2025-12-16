@@ -34,6 +34,14 @@ let searchMarker;
 let planChartInstance = null;
 let activityChartInstance = null;
 
+// Data Cache & View State
+let cachedData = {
+    orders: [],
+    leads: [],
+    activity: []
+};
+let currentView = 'orders';
+
 // DOM Elements
 const loginScreen = document.getElementById('login-screen');
 const appContainer = document.getElementById('app-container');
@@ -71,8 +79,6 @@ function getUniqueByAddress(items, addressKey = 'address', dateKey = null) {
                 unique.push(item);
             }
         } else {
-            // Include items without address (e.g. data errors or non-address entries) 
-            // as they are not "duplicate addresses" technically.
             unique.push(item); 
         }
     }
@@ -113,24 +119,17 @@ onAuthStateChanged(auth, (user) => {
 
         // --- SECURITY FIX: CORRECT COMPARISON ---
         const email = user.email.toLowerCase();
-        // NOTE: While we allow UI access to 'ppenrose', your Firestore Rules currently 
-        // restrict WRITE access to 'jmiller' only. 'ppenrose' will see buttons but writes may fail.
         isUserAdmin = (email === 'jmiller@nptel.com' || email === 'ppenrose@nptel.com');
-        // ----------------------------------------
         
         initTabs();
         loadAnalyticsData(); 
         
-        // Listeners
-        document.getElementById('export-orders-btn').addEventListener('click', exportOrdersToCSV);
-        document.getElementById('export-activity-btn').addEventListener('click', exportActivityToCSV);
-        
-        // --- NEW: LEAD EXPORT LISTENER ---
-        const exportLeadsBtn = document.getElementById('export-leads-btn');
-        if (exportLeadsBtn) {
-            exportLeadsBtn.addEventListener('click', exportLeadsToCSV);
-        }
-        // ---------------------------------
+        // Export Listener (Dynamic)
+        document.getElementById('export-current-btn').addEventListener('click', () => {
+            if(currentView === 'orders') exportOrdersToCSV();
+            else if(currentView === 'leads') exportLeadsToCSV();
+            else if(currentView === 'activity') exportActivityToCSV();
+        });
 
         document.getElementById('campaign-form').addEventListener('submit', handleCampaignSave);
         document.getElementById('add-plan-btn').addEventListener('click', () => addPlanRow());
@@ -161,7 +160,7 @@ function openCampaignModal(campaignId = null) {
     // Clear previous state
     form.reset();
     plansContainer.innerHTML = '';
-    document.getElementById('camp-expires').value = ''; // Clear date explicitly
+    document.getElementById('camp-expires').value = ''; 
     
     if (campaignId) {
         // Edit Mode
@@ -179,17 +178,13 @@ function openCampaignModal(campaignId = null) {
             document.getElementById('camp-color').value = data.color || '#ff0000';
             document.getElementById('is-default-pricing').checked = (campaignId === 'global_default');
             
-            // --- LOAD EXPIRATION DATE ---
             if (data.expiresAt) {
-                // Handle Firestore Timestamp or standard JS Date
                 const d = data.expiresAt.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt);
-                // Format to YYYY-MM-DD for the input
                 if (!isNaN(d.getTime())) {
                    const dateStr = d.toISOString().split('T')[0];
                    document.getElementById('camp-expires').value = dateStr;
                 }
             }
-            // ---------------------------------
             
             if (data.plans) {
                 Object.entries(data.plans).forEach(([name, details]) => {
@@ -203,7 +198,7 @@ function openCampaignModal(campaignId = null) {
         // Create Mode
         modalTitle.textContent = "New Campaign";
         editingCampaignId = null;
-        document.getElementById('camp-color').value = '#0066ff'; // Default nice blue
+        document.getElementById('camp-color').value = '#0066ff'; 
         addPlanRow();
     }
     
@@ -313,14 +308,11 @@ async function handleCampaignSave(e) {
     const color = document.getElementById('camp-color').value;
     const isDefault = document.getElementById('is-default-pricing').checked;
     
-    // --- CAPTURE EXPIRATION ---
     const expiresInput = document.getElementById('camp-expires').value;
     let expiresAt = null;
     if (expiresInput) {
-        // Create date object
         expiresAt = new Date(expiresInput);
     }
-    // -------------------------------
 
     const plans = {};
     const rows = document.querySelectorAll('.plan-row-card');
@@ -376,7 +368,6 @@ async function loadCampaigns() {
             const container = document.getElementById('campaigns-grid');
             container.innerHTML = '';
             
-            // Map selector population
             const select = document.getElementById('campaign-select');
             while (select.options.length > 1) { select.remove(1); }
 
@@ -406,11 +397,9 @@ function renderGridCard(data, container, isDefault) {
     const card = document.createElement('div');
     card.className = isDefault ? 'grid-card default-card' : 'grid-card';
     
-    // Header
     const colorDot = isDefault ? '<i class="fa-solid fa-globe"></i> ' : `<span class="color-dot" style="background-color:${data.color}"></span>`;
     const title = isDefault ? 'Global Defaults' : data.name;
 
-    // --- EXPIRATION LABEL ---
     let expiryLabel = '';
     if (data.expiresAt) {
         const d = data.expiresAt.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt);
@@ -422,15 +411,13 @@ function renderGridCard(data, container, isDefault) {
             expiryLabel = `<div style="font-size: 0.8rem; margin-bottom: 5px; ${colorStyle}"><i class="fa-regular fa-clock"></i> ${text}: ${d.toLocaleDateString()}</div>`;
         }
     }
-    // -----------------------------
     
-    // Body (Plans Summary)
     let plansHtml = '';
     if (data.plans) {
         plansHtml = '<ul>';
         let count = 0;
         for (const [key, details] of Object.entries(data.plans)) {
-            if(count < 3) { // Show max 3 lines
+            if(count < 3) { 
                 const promo = details.promoPrice ? `<span style="color:#d4380d; font-size:0.85em;">(Promo)</span>` : '';
                 plansHtml += `<li><strong>${key}:</strong> ${details.price} ${promo}</li>`;
             }
@@ -470,11 +457,9 @@ window.duplicateCampaign = function(id) {
     else campaign = campaigns.find(c => c.id === id);
     if (!campaign) return;
     
-    openCampaignModal(); // Switch to create mode
+    openCampaignModal(); 
     document.getElementById('camp-name').value = (campaign.name || 'Campaign') + " (Copy)";
     document.getElementById('camp-color').value = campaign.color || '#ff0000';
-    
-    // Do not copy expiration date to new campaign by default
     
     const container = document.getElementById('plans-container');
     container.innerHTML = '';
@@ -485,7 +470,6 @@ window.duplicateCampaign = function(id) {
     }
 };
 
-// ... [Analytics and Map logic remains identical to previous response] ...
 function initTabs() { 
     const tabs=document.querySelectorAll('.tab-btn');
     tabs.forEach(tab=>{
@@ -501,83 +485,148 @@ function initTabs() {
     document.getElementById('refresh-data-btn').addEventListener('click',loadAnalyticsData);
 }
 
+// --- ANALYTICS & TABLE LOGIC ---
+
+window.switchTableView = function(viewName) {
+    currentView = viewName;
+    
+    document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+    // Match button by index or logic. 
+    const buttons = document.querySelectorAll('.view-btn');
+    if(viewName === 'orders') buttons[0].classList.add('active');
+    if(viewName === 'leads') buttons[1].classList.add('active');
+    if(viewName === 'activity') buttons[2].classList.add('active');
+
+    const titles = {
+        'orders': 'Recent Orders',
+        'leads': 'Captured Leads',
+        'activity': 'Activity Log'
+    };
+    document.getElementById('table-title').textContent = titles[viewName];
+
+    renderMainTable();
+};
+
+function renderMainTable() {
+    const tableHead = document.querySelector('#main-data-table thead');
+    const tableBody = document.querySelector('#main-data-table tbody');
+    tableHead.innerHTML = '';
+    tableBody.innerHTML = '';
+
+    const data = cachedData[currentView] || [];
+    const limit = 50; 
+    const displayData = data.slice(0, limit);
+
+    if (currentView === 'orders') {
+        tableHead.innerHTML = `
+            <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Plan</th>
+                <th>Address</th>
+                <th>Contact</th>
+            </tr>
+        `;
+        displayData.forEach(item => {
+            const dateStr = item.submittedAt && item.submittedAt.toDate ? item.submittedAt.toDate().toLocaleDateString() : 'N/A';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${dateStr}</td>
+                <td>${item.name || 'Unknown'}</td>
+                <td><span style="font-weight:600; color:#1e3c72;">${item.plan || 'None'}</span></td>
+                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.address || ''}</td>
+                <td>
+                    <div>${item.email || ''}</div>
+                    <small style="color:#888;">${item.phone || ''}</small>
+                </td>`;
+            tableBody.appendChild(tr);
+        });
+    } else if (currentView === 'leads') {
+        tableHead.innerHTML = `
+            <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Address</th>
+                <th>Contact Info</th>
+                <th>Type</th>
+            </tr>
+        `;
+        displayData.forEach(item => {
+            let dateObj = item.submittedAt || item.checkedAt;
+            const dateStr = dateObj && dateObj.toDate ? dateObj.toDate().toLocaleDateString() : 'N/A';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${dateStr}</td>
+                <td>${item.name || 'N/A'}</td>
+                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.address || ''}</td>
+                <td>
+                    ${item.email ? `<div><i class="fa-solid fa-envelope" style="font-size:0.8em"></i> ${item.email}</div>` : ''}
+                    ${item.phone ? `<div><i class="fa-solid fa-phone" style="font-size:0.8em"></i> ${item.phone}</div>` : ''}
+                </td>
+                <td><span style="background:#fff0f0; color:#d32f2f; padding:2px 6px; border-radius:4px; font-size:0.8em; font-weight:bold;">Lead</span></td>`;
+            tableBody.appendChild(tr);
+        });
+    } else if (currentView === 'activity') {
+        tableHead.innerHTML = `
+            <tr>
+                <th>Date</th>
+                <th>Address</th>
+                <th>Status</th>
+                <th>Coordinates</th>
+            </tr>
+        `;
+        displayData.forEach(item => {
+            let dateObj = item.checkedAt || item.submittedAt;
+            const dateStr = dateObj && dateObj.toDate ? dateObj.toDate().toLocaleString() : 'N/A';
+            const statusBadge = item.isAvailable 
+                ? `<span style="color:#2e7d32; background:#e8f5e9; padding:2px 8px; border-radius:10px; font-weight:bold;">Serviceable</span>` 
+                : `<span style="color:#c62828; background:#ffebee; padding:2px 8px; border-radius:10px; font-weight:bold;">Unserviceable</span>`;
+            
+            const coords = item.location ? `${item.location.lat.toFixed(4)}, ${item.location.lng.toFixed(4)}` : 'N/A';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${dateStr}</td>
+                <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.address || ''}</td>
+                <td>${statusBadge}</td>
+                <td style="font-family:monospace; font-size:0.85em;">${coords}</td>`;
+            tableBody.appendChild(tr);
+        });
+    }
+}
+
 async function loadAnalyticsData() {
-    if(!auth.currentUser)return;
+    if(!auth.currentUser) return;
     try {
         const refreshBtn = document.getElementById('refresh-data-btn');
         if(refreshBtn) refreshBtn.classList.add('fa-spin');
 
-        // Fetch Orders
+        // 1. Fetch Orders
         const ordersSnap = await getDocs(collection(db,'artifacts',appId,'public','data','orders'));
         let rawOrders = [];
-        ordersSnap.forEach(doc => {
-            rawOrders.push({ id: doc.id, ...doc.data() });
-        });
+        ordersSnap.forEach(doc => { rawOrders.push({ id: doc.id, ...doc.data() }); });
+        cachedData.orders = getUniqueByAddress(rawOrders, 'address', 'submittedAt');
 
-        // Deduplicate Orders
-        const uniqueOrders = getUniqueByAddress(rawOrders, 'address', 'submittedAt');
-
-        const planCounts = {};
-
-        uniqueOrders.forEach(data => {
-            
-            // Normalize plan names for chart
-            let pName = data.plan || 'Unknown';
-            if(pName.includes(' ')) pName = pName.split(' ')[0]; 
-            
-            planCounts[pName] = (planCounts[pName] || 0) + 1;
-        });
-
-        // Fetch Checks
+        // 2. Fetch Checks (Activity)
         const checksSnap = await getDocs(collection(db,'artifacts',appId,'public','data','service_requests'));
         let rawChecks = [];
-        checksSnap.forEach(doc => {
-            rawChecks.push(doc.data());
-        });
+        checksSnap.forEach(doc => { rawChecks.push(doc.data()); });
+        cachedData.activity = getUniqueByAddress(rawChecks, 'address', 'checkedAt');
 
-        // Deduplicate Checks
-        const uniqueChecks = getUniqueByAddress(rawChecks, 'address', 'checkedAt'); 
-
-        let uniqueAvailableCount = 0;
-        let uniqueUnavailableCount = 0;
-        const uniqueAvailableAddresses = new Set(); 
-
-        uniqueChecks.forEach(data => {
-            if(data.address){
-                const normAddr = data.address.trim().toLowerCase();
-                if(data.isAvailable) {
-                    uniqueAvailableCount++;
-                    uniqueAvailableAddresses.add(normAddr);
-                } else {
-                    uniqueUnavailableCount++;
-                }
+        // 3. Process Leads (Subset of Activity)
+        let rawLeads = [];
+        rawChecks.forEach(data => {
+            if (data.type === 'manual_check' || (data.name && (data.phone || data.email))) {
+                rawLeads.push(data);
             }
         });
+        cachedData.leads = getUniqueByAddress(rawLeads, 'address', 'submittedAt');
 
-        const uniqueOrderAddresses = new Set(uniqueOrders.map(o => o.address ? o.address.trim().toLowerCase() : ''));
-        
-        let unconvertedLeads = 0;
-        uniqueAvailableAddresses.forEach(addr => {
-            if(!uniqueOrderAddresses.has(addr)) unconvertedLeads++;
-        });
+        // 4. Update Stats UI
+        updateStatsUI(cachedData.orders, cachedData.activity, cachedData.leads);
 
-        const conversionRate = uniqueAvailableCount > 0 ? 
-            ((uniqueOrders.length / uniqueAvailableCount) * 100).toFixed(1) : 0;
-
-        updateDashboardUI({
-            totalOrders: uniqueOrders.length,
-            totalUniqueChecks: uniqueChecks.length,
-            uniqueAvailable: uniqueAvailableCount,
-            uniqueUnavailable: uniqueUnavailableCount,
-            unconvertedLeads,
-            conversionRate,
-            planCounts
-        });
-
-        renderCharts(planCounts, { available: uniqueAvailableCount, unavailable: uniqueUnavailableCount });
-
-        // Table uses uniqueOrders (already sorted by date desc in helper)
-        renderOrdersTable(uniqueOrders);
+        // 5. Render Table (Current View)
+        renderMainTable();
 
         if(refreshBtn) refreshBtn.classList.remove('fa-spin');
 
@@ -586,154 +635,34 @@ async function loadAnalyticsData() {
     }
 }
 
-async function exportOrdersToCSV() { 
-    if(!confirm("Download Orders Report (Unique Addresses Only)?")) return; 
-    try { 
-        const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'orders')); 
-        let rawOrders = [];
-        snapshot.forEach(doc => rawOrders.push({ ...doc.data() })); 
-        
-        const uniqueOrders = getUniqueByAddress(rawOrders, 'address', 'submittedAt');
+function updateStatsUI(orders, activity, leads) {
+    const planCounts = {};
+    orders.forEach(data => {
+        let pName = data.plan || 'Unknown';
+        if(pName.includes(' ')) pName = pName.split(' ')[0]; 
+        planCounts[pName] = (planCounts[pName] || 0) + 1;
+    });
 
-        let csvContent = "data:text/csv;charset=utf-8,"; 
-        csvContent += "Date,Name,Email,Phone,Address,Plan,Status\n"; 
-        
-        uniqueOrders.forEach(data => { 
-            const date = data.submittedAt && data.submittedAt.toDate ? data.submittedAt.toDate().toLocaleString() : ''; 
-            const row = [ 
-                `"${date}"`, 
-                `"${data.name || ''}"`, 
-                `"${data.email || ''}"`, 
-                `"${data.phone || ''}"`, 
-                `"${data.address || ''}"`, 
-                `"${data.plan || ''}"`, 
+    let available = 0, unavailable = 0;
+    activity.forEach(a => a.isAvailable ? available++ : unavailable++);
+    
+    const orderAddresses = new Set(orders.map(o => o.address ? o.address.trim().toLowerCase() : ''));
+    let unconvertedLeads = 0;
+    leads.forEach(l => {
+        const addr = l.address ? l.address.trim().toLowerCase() : '';
+        if(addr && !orderAddresses.has(addr)) unconvertedLeads++;
+    });
 
-            ].join(","); 
-            csvContent += row + "\n"; 
-        }); 
-        
-        const encodedUri = encodeURI(csvContent); 
-        const link = document.createElement("a"); 
-        link.setAttribute("href", encodedUri); 
-        link.setAttribute("download", `orders_report_unique_${new Date().toISOString().split('T')[0]}.csv`); 
-        document.body.appendChild(link); 
-        link.click(); 
-        document.body.removeChild(link); 
-    } catch (e) { 
-        console.error("Export Error:", e); 
-        alert("Failed to export orders."); 
-    } 
-}
+    const conversionRate = available > 0 ? ((orders.length / available) * 100).toFixed(1) : 0;
 
-async function exportActivityToCSV() { 
-    if(!confirm("Download Activity Log (Unique Addresses Only)?")) return; 
-    try { 
-        const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'service_requests')); 
-        let rawChecks = [];
-        snapshot.forEach(doc => rawChecks.push(doc.data()));
-        
-        const uniqueChecks = getUniqueByAddress(rawChecks, 'address', 'checkedAt');
-
-        let csvContent = "data:text/csv;charset=utf-8,"; 
-        csvContent += "Date,Address,Service Available,Coordinates\n"; 
-        
-        uniqueChecks.forEach(data => { 
-            let dateObj = data.checkedAt || data.submittedAt;
-            const date = dateObj && dateObj.toDate ? dateObj.toDate().toLocaleString() : ''; 
-            const coords = data.location ? `${data.location.lat}, ${data.location.lng}` : ''; 
-            const row = [ 
-                `"${date}"`, 
-                `"${data.address || ''}"`, 
-                `"${data.isAvailable ? 'YES' : 'NO'}"`, 
-                `"${coords}"` 
-            ].join(","); 
-            csvContent += row + "\n"; 
-        }); 
-        
-        const encodedUri = encodeURI(csvContent); 
-        const link = document.createElement("a"); 
-        link.setAttribute("href", encodedUri); 
-        link.setAttribute("download", `activity_log_unique_${new Date().toISOString().split('T')[0]}.csv`); 
-        document.body.appendChild(link); 
-        link.click(); 
-        document.body.removeChild(link); 
-    } catch (e) { 
-        console.error("Export Error:", e); 
-        alert("Failed to export activity log."); 
-    } 
-}
-
-// --- NEW FUNCTION: Export Leads from Sorry Page ---
-async function exportLeadsToCSV() {
-    if (!confirm("Download 'Sorry Page' Leads Report (Unique Addresses Only)?")) return;
-
-    try {
-        const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'service_requests'));
-        let rawLeads = [];
-        
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            // Filter initially for lead types
-            if (data.type === 'manual_check' || (data.name && (data.phone || data.email))) {
-                rawLeads.push(data);
-            }
-        });
-
-        // Deduplicate leads
-        const uniqueLeads = getUniqueByAddress(rawLeads, 'address', 'submittedAt');
-        
-        let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Date,Name,Phone,Email,Address,Type\n";
-
-        if (uniqueLeads.length === 0) {
-            alert("No leads found.");
-            return;
-        }
-
-        uniqueLeads.forEach(data => {
-            let dateStr = '';
-            if (data.submittedAt) {
-                dateStr = data.submittedAt.toDate ? data.submittedAt.toDate().toLocaleString() : new Date(data.submittedAt).toLocaleString();
-            } else if (data.checkedAt) {
-                dateStr = data.checkedAt.toDate ? data.checkedAt.toDate().toLocaleString() : new Date(data.checkedAt).toLocaleString();
-            }
-
-            const safe = (str) => `"${(str || '').replace(/"/g, '""')}"`;
-
-            const row = [
-                safe(dateStr),
-                safe(data.name),
-                safe(data.phone),
-                safe(data.email),
-                safe(data.address),
-                safe('Unserviceable Lead')
-            ].join(",");
-
-            csvContent += row + "\n";
-        });
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `leads_report_unique_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-    } catch (e) {
-        console.error("Export Error:", e);
-        alert("Failed to export leads.");
-    }
-}
-
-function updateDashboardUI(stats) {
-    document.getElementById('stat-total-val').textContent = stats.totalOrders;
-    document.getElementById('stat-serviceable-val').textContent = stats.uniqueAvailable;
-    document.getElementById('stat-conversion-val').textContent = stats.conversionRate + '%';
-    // Update the new Query Stat
+    document.getElementById('stat-total-val').textContent = orders.length;
+    document.getElementById('stat-serviceable-val').textContent = available;
+    document.getElementById('stat-conversion-val').textContent = conversionRate + '%';
     if(document.getElementById('stat-queries-val')) {
-        document.getElementById('stat-queries-val').textContent = stats.totalUniqueChecks;
+        document.getElementById('stat-queries-val').textContent = activity.length;
     }
+
+    renderCharts(planCounts, { available, unavailable });
 }
 
 function renderCharts(planCounts, availabilityStats) {
@@ -789,24 +718,57 @@ function renderCharts(planCounts, availabilityStats) {
     });
 }
 
-function renderOrdersTable(orders) { 
-    const tbody=document.querySelector('#orders-table tbody');
-    tbody.innerHTML='';
-    orders.forEach(order=>{
-        const tr=document.createElement('tr');
-        let dateStr='N/A';
-        if(order.submittedAt&&order.submittedAt.toDate) dateStr=order.submittedAt.toDate().toLocaleDateString();
-        tr.innerHTML=`
-            <td>${dateStr}</td>
-            <td>${order.name||'Unknown'}</td>
-            <td><span style="font-weight:600; color:#1e3c72;">${order.plan||'None'}</span></td>
-            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${order.address||''}</td>
-            <td>
-                <div>${order.email||''}</div>
-                <small style="color:#888;">${order.phone||''}</small>
-            </td>`;
-        tbody.appendChild(tr);
+// Export Functions (Using Cached Data)
+async function exportOrdersToCSV() { 
+    if(!cachedData.orders.length) { alert("No data to export."); return; }
+    if(!confirm("Download Orders Report (Unique Addresses Only)?")) return; 
+
+    let csv = "Date,Name,Email,Phone,Address,Plan\n"; 
+    cachedData.orders.forEach(d => { 
+        const date = d.submittedAt && d.submittedAt.toDate ? d.submittedAt.toDate().toLocaleString() : ''; 
+        const row = [`"${date}"`, `"${d.name||''}"`, `"${d.email||''}"`, `"${d.phone||''}"`, `"${d.address||''}"`, `"${d.plan||''}"`].join(","); 
+        csv += row + "\n"; 
+    }); 
+    downloadCSV(csv, "orders_report.csv");
+}
+
+async function exportActivityToCSV() { 
+    if(!cachedData.activity.length) { alert("No data to export."); return; }
+    if(!confirm("Download Activity Log (Unique Addresses Only)?")) return; 
+
+    let csv = "Date,Address,Service Available,Coordinates\n"; 
+    cachedData.activity.forEach(d => { 
+        let dateObj = d.checkedAt || d.submittedAt;
+        const date = dateObj && dateObj.toDate ? dateObj.toDate().toLocaleString() : ''; 
+        const coords = d.location ? `${d.location.lat}, ${d.location.lng}` : ''; 
+        const row = [`"${date}"`, `"${d.address||''}"`, `"${d.isAvailable?'YES':'NO'}"`, `"${coords}"`].join(","); 
+        csv += row + "\n"; 
+    }); 
+    downloadCSV(csv, "activity_log.csv");
+}
+
+async function exportLeadsToCSV() {
+    if(!cachedData.leads.length) { alert("No data to export."); return; }
+    if(!confirm("Download Leads Report (Unique Addresses Only)?")) return; 
+
+    let csv = "Date,Name,Phone,Email,Address,Type\n";
+    cachedData.leads.forEach(d => {
+        let dateObj = d.submittedAt || d.checkedAt;
+        const date = dateObj && dateObj.toDate ? dateObj.toDate().toLocaleString() : ''; 
+        const row = [`"${date}"`, `"${d.name||''}"`, `"${d.phone||''}"`, `"${d.email||''}"`, `"${d.address||''}"`, `"Unserviceable Lead"`].join(",");
+        csv += row + "\n";
     });
+    downloadCSV(csv, "leads_report.csv");
+}
+
+function downloadCSV(content, filename) {
+    const encodedUri = encodeURI("data:text/csv;charset=utf-8," + content); 
+    const link = document.createElement("a"); 
+    link.setAttribute("href", encodedUri); 
+    link.setAttribute("download", filename); 
+    document.body.appendChild(link); 
+    link.click(); 
+    document.body.removeChild(link); 
 }
 
 // Map Logic (Preserved)

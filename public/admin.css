@@ -247,7 +247,12 @@ input:checked + .slider:before { transform: translateX(20px); }
 .chart-wrapper { position: relative; height: 250px; width: 100%; }
 
 .data-section { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); padding: 25px; }
-.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.section-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-start; /* Aligns title/tabs with buttons properly */
+    margin-bottom: 25px; 
+}
 .section-header h2 { margin: 0; font-size: 1.25rem; color: #222; font-weight: 700; }
 .table-wrapper { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
@@ -256,3 +261,34 @@ td { padding: 15px; border-bottom: 1px solid #f0f0f0; color: #444; }
 tr:hover { background-color: #fbfbfb; }
 .icon-btn { background: none; border: none; cursor: pointer; color: #666; font-size: 1.1rem; transition: transform 0.3s; }
 .icon-btn:hover { color: #000; transform: rotate(180deg); }
+
+/* --- View Switcher --- */
+.view-switcher-container {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.view-btn {
+    background: #f0f2f5;
+    border: 1px solid #dce1e6;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.view-btn:hover {
+    background: #e1e4e8;
+    color: #333;
+}
+
+.view-btn.active {
+    background: #0066ff;
+    color: white;
+    border-color: #0066ff;
+    box-shadow: 0 2px 5px rgba(0, 102, 255, 0.25);
+}

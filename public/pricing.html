@@ -23,11 +23,41 @@
     </header>
 
     <!-- Success Banner -->
-    <div class="header-box">
+<div class="header-box">
         <div class="content-width">
             <h1><i class="fa-solid fa-circle-check"></i> Congrats!</h1>
             <p>You are in our service territory. <br>Here are the speed tiers available for: <strong><span id="display-address">Your Address</span></strong></p>
-        </div>
+            
+            <div style="
+                margin: 30px auto 0 auto; 
+                background-color: rgba(255, 255, 255, 0.15); 
+                border: 1px solid rgba(255, 255, 255, 0.3); 
+                border-radius: 12px; 
+                padding: 15px 30px; 
+                display: flex; /* Flexbox aligns items horizontally */
+                flex-wrap: wrap; /* Wraps to vertical on small screens */
+                justify-content: center; /* Centers items nicely with the gap */
+                align-items: center; 
+                gap: 20px; /* Space between the two sentences */
+                width: 90%; 
+                max-width: 800px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            ">
+                <span style="font-size: 1rem; color: #fff;">
+                    <i class="fa-solid fa-house-chimney" style="margin-right: 8px; opacity: 0.9;"></i>
+                    Pricing displayed is only for <strong>Residential Service</strong>.
+                </span>
+
+                <span style="border-left: 1px solid rgba(255,255,255,0.4); height: 20px; display: inline-block;" class="desktop-divider"></span>
+
+                <span style="font-size: 1rem; color: #fff;">
+                     Need Business Fiber? 
+                    <a href="https://communityfiber.net/cfn-business/" style="color: white; text-decoration: underline; font-weight: 800; margin-left: 5px;">
+                        Inquire Here <i class="fa-solid fa-arrow-right" style="font-size: 0.8em; margin-left: 5px;"></i>
+                    </a>
+                </span>
+            </div>
+            </div>
     </div>
 
     <!-- Pricing Cards Container (Populated by JS) -->

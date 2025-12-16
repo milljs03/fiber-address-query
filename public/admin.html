@@ -96,7 +96,7 @@
                       <div class="icon-box"><i class="fa-solid fa-bullseye"></i></div>
                       <div class="stat-info"><h3>Conversion</h3><p id="stat-conversion-val">--%</p></div>
                   </div>
-                  <!-- NEW CARD: Total Unique Queries -->
+                  <!-- Total Unique Queries -->
                   <div class="stat-card teal-card">
                       <div class="icon-box"><i class="fa-solid fa-magnifying-glass-location"></i></div>
                       <div class="stat-info"><h3>Unique Queries</h3><p id="stat-queries-val">--</p></div>
@@ -116,28 +116,27 @@
 
               <div class="data-section">
                   <div class="section-header">
-                      <h2>Recent Orders</h2>
+                      <div>
+                          <h2 id="table-title">Recent Orders</h2>
+                          <div class="view-switcher-container">
+                              <button class="view-btn active" onclick="window.switchTableView('orders')">Orders</button>
+                              <button class="view-btn" onclick="window.switchTableView('leads')">Leads</button>
+                              <button class="view-btn" onclick="window.switchTableView('activity')">Activity</button>
+                          </div>
+                      </div>
                       <div class="header-actions">
-                          <button id="export-orders-btn" class="action-btn small"><i class="fa-solid fa-file-csv"></i> Export Orders</button>
-                          
-                          <button id="export-leads-btn" class="action-btn small" style="color: #d32f2f; border-color: #d32f2f; background: #fff0f0;"><i class="fa-solid fa-user-clock"></i> Export Leads</button>
-                          
-                          <button id="export-activity-btn" class="action-btn small"><i class="fa-solid fa-list"></i> Export Activity</button>
+                          <button id="export-current-btn" class="action-btn small"><i class="fa-solid fa-file-csv"></i> Export View</button>
                           <button id="refresh-data-btn" class="icon-btn" title="Refresh Data"><i class="fa-solid fa-arrows-rotate"></i></button>
                       </div>
                   </div>
                   <div class="table-wrapper">
-                      <table id="orders-table">
+                      <table id="main-data-table">
                           <thead>
-                              <tr>
-                                  <th>Date</th>
-                                  <th>Name</th>
-                                  <th>Plan</th>
-                                  <th>Address</th>
-                                  <th>Contact</th>
-                              </tr>
+                              <!-- Headers injected via JS -->
                           </thead>
-                          <tbody></tbody>
+                          <tbody>
+                              <!-- Rows injected via JS -->
+                          </tbody>
                       </table>
                   </div>
               </div>
