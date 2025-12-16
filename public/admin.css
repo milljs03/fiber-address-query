@@ -96,16 +96,34 @@ html, body {
 /* --- MAP VIEW --- */
 #map-view { position: relative; height: 100%; }
 #map { height: 100%; width: 100%; }
+
+/* UPDATED CONTROLS BAR TO PREVENT WRAPPING */
 #controls {
   position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 5;
   background-color: rgba(255,255,255,0.95); backdrop-filter: blur(5px);
   padding: 10px 20px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);
   display: flex; gap: 12px; align-items: center;
+  
+  /* New Properties for Overflow Handling */
+  white-space: nowrap;       /* Prevent text wrapping */
+  flex-wrap: nowrap;         /* Force single line */
+  max-width: 95vw;           /* Ensure it doesn't go off screen */
+  overflow-x: auto;          /* Allow scroll on small screens */
+  scrollbar-width: none;     /* Hide scrollbar (Firefox) */
+  -ms-overflow-style: none;  /* Hide scrollbar (IE/Edge) */
 }
+
+/* Hide scrollbar for Chrome/Safari/Opera */
+#controls::-webkit-scrollbar {
+  display: none; 
+}
+
 .action-btn {
   background-color: #fff; border: 1px solid #ddd; padding: 8px 16px;
   cursor: pointer; border-radius: 6px; font-size: 13px; display: flex; align-items: center;
   gap: 8px; font-weight: 500; transition: all 0.2s; color: #444;
+  white-space: nowrap; /* Ensure button text doesn't wrap */
+  flex-shrink: 0;      /* Prevent buttons from squishing */
 }
 .action-btn:hover { background-color: #f8f9fa; border-color: #ccc; }
 .action-btn.primary { background-color: #0066ff; color: white; border-color: #0066ff; }
@@ -113,7 +131,115 @@ html, body {
 .action-btn.large { padding: 10px 20px; font-size: 0.95rem; }
 .action-btn.primary-text { color: #0066ff; border: 1px dashed #0066ff; background: #f0f7ff; }
 
-/* --- CAMPAIGN DASHBOARD (NEW) --- */
+/* NEW: Active State for Toggle Buttons */
+.action-btn.active {
+    background-color: #e3f2fd;
+    color: #0066ff;
+    border-color: #0066ff;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* NEW: Heatmap Legend */
+#heatmap-legend {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    margin-left: 15px;
+    padding-left: 15px;
+    border-left: 1px solid #ccc;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #555;
+    flex-shrink: 0; /* Prevent legend from shrinking too much */
+}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot-green { background-color: #2ecc71; border: 1px solid #27ae60; }
+.dot-red { background-color: #e74c3c; border: 1px solid #c0392b; }
+
+/* NEW: Draggable Campaign Palette */
+.floating-palette {
+    position: absolute;
+    top: 80px;
+    right: 20px;
+    width: 260px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    z-index: 10;
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideIn 0.3s ease-out;
+}
+
+.floating-palette.hidden { display: none; }
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.palette-header {
+    padding: 15px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.palette-header h4 { margin: 0; font-size: 0.95rem; color: #333; }
+.palette-header button { font-size: 1.2rem; color: #888; }
+
+#palette-list {
+    padding: 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.draggable-campaign {
+    background: white;
+    border: 1px solid #e0e0e0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.draggable-campaign:hover {
+    background: #f0f7ff;
+    border-color: #b3d7ff;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.draggable-campaign:active {
+    cursor: grabbing;
+    transform: scale(0.98);
+}
+
+.drag-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.drag-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #333;
+}
+
+/* --- CAMPAIGN DASHBOARD --- */
 .campaign-dashboard-container {
     padding: 30px; max-width: 1400px; margin: 0 auto; height: 100%; box-sizing: border-box; overflow-y: auto;
 }

@@ -29,6 +29,11 @@ let globalDefaultCampaign = null;
 let editingCampaignId = null;     
 let isUserAdmin = false;
 let searchMarker;
+let mapOverlay; // Helper for coordinate translation
+
+// Heatmap State
+let heatmapMarkers = [];
+let isHeatmapVisible = false;
 
 // Chart Instances
 let planChartInstance = null;
@@ -117,7 +122,6 @@ onAuthStateChanged(auth, (user) => {
         appContainer.style.display = 'flex'; 
         userDisplay.textContent = user.email;
 
-        // --- SECURITY FIX: CORRECT COMPARISON ---
         const email = user.email.toLowerCase();
         isUserAdmin = (email === 'jmiller@nptel.com' || email === 'ppenrose@nptel.com');
         
@@ -387,6 +391,7 @@ async function loadCampaigns() {
                     select.appendChild(opt);
                 }
             });
+            renderCampaignPalette(); // update draggable list
             refreshMapColors();
         }, 
         (error) => console.error("Snapshot Error:", error)
@@ -771,10 +776,284 @@ function downloadCSV(content, filename) {
     document.body.removeChild(link); 
 }
 
-// Map Logic (Preserved)
+// Map Logic
 function initializeMapLogic() {window.mapLogicReadyCallback=(isAdmin)=>{isUserAdmin=isAdmin;loadMapFeatures();};if(typeof window.currentUserIsAdmin!=='undefined')window.mapLogicReadyCallback(window.currentUserIsAdmin);}
 if(window.isGoogleMapsReady)initializeMapLogic();else window.addEventListener('google-maps-ready',initializeMapLogic);
-function loadMapFeatures() {if(map)return;initSearchControl();map=new google.maps.Map(document.getElementById('map'),{center:{lat:41.5006,lng:-85.8305},zoom:14,mapTypeId:'hybrid',disableDefaultUI:!isUserAdmin,zoomControl:true,});loadPolygonsFromDatabase();const campaignSelect=document.getElementById('campaign-select');if(campaignSelect){campaignSelect.addEventListener('change',async(e)=>{if(selectedShape&&selectedShape.firebaseId){const campaignId=e.target.value;selectedShape.campaignId=campaignId;updateShapeColor(selectedShape);try{const docRef=doc(db,'artifacts',appId,'public','data','polygons',selectedShape.firebaseId);await updateDoc(docRef,{campaignId:campaignId});}catch(err){console.error("Error assigning campaign:",err);}}});}if(isUserAdmin){document.getElementById('admin-instructions').style.display='block';drawingManager=new google.maps.drawing.DrawingManager({drawingMode:google.maps.drawing.OverlayType.POLYGON,drawingControl:true,drawingControlOptions:{position:google.maps.ControlPosition.TOP_LEFT,drawingModes:['polygon']},polygonOptions:{fillColor:'#ffff00',fillOpacity:0.5,strokeWeight:2,clickable:true,editable:true,zIndex:1}});drawingManager.setMap(map);google.maps.event.addListener(drawingManager,'overlaycomplete',function(e){if(e.type!==google.maps.drawing.OverlayType.MARKER){drawingManager.setDrawingMode(null);const newShape=e.overlay;newShape.type=e.type;newShape.campaignId="";savePolygonToDatabase(newShape).then(id=>{newShape.firebaseId=id;allShapes.push(newShape);attachPolygonListeners(newShape);});google.maps.event.addListener(newShape,'click',function(){setSelection(newShape);});setSelection(newShape);}});google.maps.event.addListener(map,'click',clearSelection);document.addEventListener('keydown',function(e){if(e.key==="Backspace"||e.key==="Delete")deleteSelectedShape();});}document.getElementById('export-btn').addEventListener('click',exporttoJSON);const importBtn=document.getElementById('import-btn');const importInput=document.getElementById('import-input');if(importBtn&&importInput){importBtn.addEventListener('click',()=>importInput.click());importInput.addEventListener('change',async(e)=>{const file=e.target.files[0];if(!file)return;const filename=file.name.toLowerCase();if(filename.endsWith('.json')||filename.endsWith('.geojson')){const reader=new FileReader();reader.onload=(event)=>{try{const geoJson=JSON.parse(event.target.result);loadPolygonsFromGeoJSON(geoJson);}catch(error){console.error(error);}};reader.readAsText(file);}importInput.value='';});}}
+
+function loadMapFeatures() {
+    if(map)return;
+    initSearchControl();
+    
+    map=new google.maps.Map(document.getElementById('map'),{center:{lat:41.5006,lng:-85.8305},zoom:14,mapTypeId:'hybrid',disableDefaultUI:!isUserAdmin,zoomControl:true,});
+    
+    // --- Initialize Helper Overlay for Coordinates ---
+    class ProjectionHelper extends google.maps.OverlayView {
+        onAdd(){} onRemove(){} draw(){}
+    }
+    mapOverlay = new ProjectionHelper();
+    mapOverlay.setMap(map);
+    // -------------------------------------------------
+
+    loadPolygonsFromDatabase();
+    
+    // --- Listeners ---
+    const heatmapBtn = document.getElementById('heatmap-btn');
+    if(heatmapBtn) heatmapBtn.addEventListener('click', toggleHeatmap);
+    
+    const paletteBtn = document.getElementById('palette-btn');
+    if(paletteBtn) paletteBtn.addEventListener('click', toggleCampaignPalette);
+    
+    document.getElementById('close-palette').addEventListener('click', () => {
+        document.getElementById('campaign-palette').classList.add('hidden');
+        if(paletteBtn) paletteBtn.classList.remove('active');
+    });
+
+    // --- Drop Zone Logic on Map ---
+    const mapDiv = document.getElementById('map');
+    
+    // Prevent default to allow dropping
+    mapDiv.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+    });
+
+    mapDiv.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const campaignId = e.dataTransfer.getData('text/plain');
+        if (!campaignId) return;
+
+        // Calculate LatLng from drop position
+        const rect = mapDiv.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        if (!mapOverlay.getProjection()) return;
+        
+        const latLng = mapOverlay.getProjection().fromContainerPixelToLatLng(new google.maps.Point(x, y));
+        
+        // Find which polygon contains this point
+        const targetPolygon = allShapes.find(shape => {
+            // Check only polygons that are visible and editable
+            if (shape.type === 'polygon' && shape.getMap()) {
+                return google.maps.geometry.poly.containsLocation(latLng, shape);
+            }
+            return false;
+        });
+
+        if (targetPolygon && targetPolygon.firebaseId) {
+            assignCampaignToPolygon(targetPolygon, campaignId);
+        }
+    });
+
+    const campaignSelect=document.getElementById('campaign-select');
+    if(campaignSelect){
+        campaignSelect.addEventListener('change',async(e)=>{
+            if(selectedShape&&selectedShape.firebaseId){
+                const campaignId=e.target.value;
+                selectedShape.campaignId=campaignId;
+                updateShapeColor(selectedShape);
+                try{
+                    const docRef=doc(db,'artifacts',appId,'public','data','polygons',selectedShape.firebaseId);
+                    await updateDoc(docRef,{campaignId:campaignId});
+                }catch(err){console.error("Error assigning campaign:",err);}
+            }
+        });
+    }
+
+    if(isUserAdmin){
+        document.getElementById('admin-instructions').style.display='block';
+        drawingManager=new google.maps.drawing.DrawingManager({
+            drawingMode:google.maps.drawing.OverlayType.POLYGON,
+            drawingControl:true,
+            drawingControlOptions:{position:google.maps.ControlPosition.TOP_LEFT,drawingModes:['polygon']},
+            polygonOptions:{fillColor:'#ffff00',fillOpacity:0.5,strokeWeight:2,clickable:true,editable:true,zIndex:1}
+        });
+        drawingManager.setMap(map);
+        
+        google.maps.event.addListener(drawingManager,'overlaycomplete',function(e){
+            if(e.type!==google.maps.drawing.OverlayType.MARKER){
+                drawingManager.setDrawingMode(null);
+                const newShape=e.overlay;
+                newShape.type=e.type;
+                newShape.campaignId="";
+                savePolygonToDatabase(newShape).then(id=>{newShape.firebaseId=id;allShapes.push(newShape);attachPolygonListeners(newShape);});
+                google.maps.event.addListener(newShape,'click',function(){setSelection(newShape);});
+                setSelection(newShape);
+            }
+        });
+        
+        google.maps.event.addListener(map,'click',clearSelection);
+        document.addEventListener('keydown',function(e){if(e.key==="Backspace"||e.key==="Delete")deleteSelectedShape();});
+    }
+
+    document.getElementById('export-btn').addEventListener('click',exporttoJSON);
+    const importBtn=document.getElementById('import-btn');
+    const importInput=document.getElementById('import-input');
+    if(importBtn&&importInput){
+        importBtn.addEventListener('click',()=>importInput.click());
+        importInput.addEventListener('change',async(e)=>{
+            const file=e.target.files[0];
+            if(!file)return;
+            const filename=file.name.toLowerCase();
+            if(filename.endsWith('.json')||filename.endsWith('.geojson')){
+                const reader=new FileReader();
+                reader.onload=(event)=>{try{const geoJson=JSON.parse(event.target.result);loadPolygonsFromGeoJSON(geoJson);}catch(error){console.error(error);}};
+                reader.readAsText(file);
+            }
+            importInput.value='';
+        });
+    }
+}
+
+// --- Palette Logic ---
+function toggleCampaignPalette() {
+    const palette = document.getElementById('campaign-palette');
+    const btn = document.getElementById('palette-btn');
+    
+    if (palette.classList.contains('hidden')) {
+        palette.classList.remove('hidden');
+        btn.classList.add('active');
+        renderCampaignPalette();
+    } else {
+        palette.classList.add('hidden');
+        btn.classList.remove('active');
+    }
+}
+
+function renderCampaignPalette() {
+    const container = document.getElementById('palette-list');
+    container.innerHTML = '';
+
+    campaigns.forEach(camp => {
+        const div = document.createElement('div');
+        div.className = 'draggable-campaign';
+        div.draggable = true;
+        div.innerHTML = `
+            <span class="drag-swatch" style="background-color: ${camp.color || '#ccc'}"></span>
+            <span class="drag-name">${camp.name}</span>
+        `;
+        
+        div.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', camp.id);
+            e.dataTransfer.effectAllowed = 'copy';
+            div.style.opacity = '0.5';
+        });
+        
+        div.addEventListener('dragend', () => {
+            div.style.opacity = '1';
+        });
+
+        container.appendChild(div);
+    });
+    
+    if (campaigns.length === 0) {
+        container.innerHTML = '<div style="color:#888; text-align:center; padding:10px;">No campaigns found.</div>';
+    }
+}
+
+async function assignCampaignToPolygon(polygon, campaignId) {
+    if (!auth.currentUser) return;
+    
+    // Optimistic UI Update
+    polygon.campaignId = campaignId;
+    updateShapeColor(polygon);
+    
+    // Briefly highlight
+    const originalStroke = polygon.get('strokeWeight');
+    polygon.setOptions({ strokeWeight: 4, strokeColor: '#00ff00' });
+    setTimeout(() => polygon.setOptions({ strokeWeight: originalStroke, strokeColor: '#000000' }), 600);
+    
+    try {
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'polygons', polygon.firebaseId);
+        await updateDoc(docRef, { campaignId: campaignId });
+        console.log(`Assigned campaign ${campaignId} to polygon ${polygon.firebaseId}`);
+    } catch (err) {
+        console.error("Error assigning campaign:", err);
+        alert("Failed to save assignment.");
+    }
+}
+
+// --- Heatmap Logic ---
+async function toggleHeatmap() {
+    const btn = document.getElementById('heatmap-btn');
+    const legend = document.getElementById('heatmap-legend');
+    
+    isHeatmapVisible = !isHeatmapVisible;
+
+    if (isHeatmapVisible) {
+        btn.classList.add('active');
+        legend.style.display = 'flex';
+        
+        if (heatmapMarkers.length === 0) {
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading...';
+            await loadHeatmapData();
+            btn.innerHTML = '<i class="fa-solid fa-layer-group"></i> Hide Demand';
+        } else {
+            heatmapMarkers.forEach(marker => marker.setMap(map));
+            btn.innerHTML = '<i class="fa-solid fa-layer-group"></i> Hide Demand';
+        }
+    } else {
+        btn.classList.remove('active');
+        legend.style.display = 'none';
+        btn.innerHTML = '<i class="fa-solid fa-layer-group"></i> Show Demand';
+        heatmapMarkers.forEach(marker => marker.setMap(null));
+    }
+}
+
+async function loadHeatmapData() {
+    if (!auth.currentUser) return;
+    try {
+        let data = cachedData.activity;
+        
+        // If data not yet loaded by Analytics tab, fetch it
+        if (!data || data.length === 0) {
+            const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'service_requests'));
+            let rawChecks = [];
+            snapshot.forEach(doc => rawChecks.push(doc.data()));
+            data = getUniqueByAddress(rawChecks, 'address', 'checkedAt');
+        }
+
+        data.forEach(item => {
+            if (item.location && item.location.lat && item.location.lng) {
+                const isServiceable = item.isAvailable === true;
+                
+                const marker = new google.maps.Marker({
+                    position: item.location,
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 6,
+                        fillColor: isServiceable ? '#2ecc71' : '#e74c3c',
+                        fillOpacity: 0.9,
+                        strokeWeight: 1,
+                        strokeColor: '#ffffff'
+                    },
+                    title: `${item.address} (${isServiceable ? 'Serviceable' : 'Unserviceable'})`,
+                    zIndex: 10
+                });
+                
+                const infoWindow = new google.maps.InfoWindow({
+                    content: `<div style="color:black; font-family:sans-serif; padding:5px;">
+                                <strong>${item.address}</strong><br>
+                                Status: ${isServiceable ? '<span style="color:green; font-weight:bold;">Serviceable</span>' : '<span style="color:red; font-weight:bold;">Unserviceable</span>'}<br>
+                                <small>${item.checkedAt ? new Date(item.checkedAt.toDate()).toLocaleDateString() : ''}</small>
+                              </div>`
+                });
+
+                marker.addListener('click', () => {
+                    infoWindow.open(map, marker);
+                });
+
+                heatmapMarkers.push(marker);
+            }
+        });
+
+    } catch (e) {
+        console.error("Error loading heatmap:", e);
+        alert("Failed to load demand data.");
+    }
+}
+
 function initSearchControl() {const controlDiv=document.createElement("div");controlDiv.style.marginTop="10px";controlDiv.style.display="flex";controlDiv.style.gap="5px";controlDiv.style.zIndex="5";const searchInput=document.createElement("input");searchInput.type="text";searchInput.placeholder="Search Address";searchInput.style.padding="8px";searchInput.style.borderRadius="4px";searchInput.style.border="1px solid #ccc";const searchBtn=document.createElement("button");searchBtn.textContent="Go";searchBtn.style.padding="8px 12px";searchBtn.style.cursor="pointer";controlDiv.appendChild(searchInput);controlDiv.appendChild(searchBtn);if(map)map.controls[google.maps.ControlPosition.TOP_CENTER].push(controlDiv);const geocoder=new google.maps.Geocoder();const performSearch=()=>{const address=searchInput.value;if(!address)return;geocoder.geocode({'address':address},function(results,status){if(status==='OK'){map.setCenter(results[0].geometry.location);map.setZoom(17);if(searchMarker)searchMarker.setMap(null);searchMarker=new google.maps.Marker({map:map,position:results[0].geometry.location});}});};searchBtn.addEventListener("click",performSearch);}
 async function savePolygonToDatabase(shape) {if(!auth.currentUser)return;const coordinates=getCoordinatesFromShape(shape);try{const docRef=await addDoc(collection(db,'artifacts',appId,'public','data','polygons'),{coordinates,type:'polygon',campaignId:shape.campaignId||"",createdAt:new Date()});return docRef.id;}catch(e){console.error(e);}}
 async function updatePolygonInDatabase(id,shape) {if(!auth.currentUser||!id)return;const coordinates=getCoordinatesFromShape(shape);try{const docRef=doc(db,'artifacts',appId,'public','data','polygons',id);await updateDoc(docRef,{coordinates,campaignId:shape.campaignId||""});}catch(e){console.error(e);}}
