@@ -22,14 +22,10 @@
 body, html {
     margin: 0;
     padding: 0;
-    /* Applied Brand Body Font */
     font-family: 'Open Sans', 'Segoe UI', sans-serif;
-    
-    /* Brand Background: NPT White + CFN Light Green Dots */
     background-color: var(--npt-white); 
     background-image: radial-gradient(var(--cfn-light-green) 1px, transparent 1px);
     background-size: 24px 24px;
-    
     color: var(--npt-black);
     height: 100%;
 }
@@ -49,7 +45,6 @@ body, html {
 
 .logo-container {
     width: 100%;
-    max-width: 100%; 
     margin: 0; 
     display: flex;
     justify-content: flex-start; 
@@ -83,13 +78,11 @@ body, html {
     background: white;
     padding: 50px;
     border-radius: 16px;
-    /* Subtle shadow using NPT Black tint */
     box-shadow: 0 10px 40px rgba(0,0,0,0.06);
     border: 1px solid #fff;
 }
 
 .form-header h2 {
-    /* Brand Heading Font */
     font-family: 'Montserrat', sans-serif;
     color: var(--npt-black); 
     margin-top: 0;
@@ -101,55 +94,65 @@ body, html {
     margin-bottom: 10px;
 }
 
-.form-header h2 i {
-    color: var(--cfn-green); 
-}
+.form-header h2 i { color: var(--cfn-green); }
 
 .form-header p {
     color: var(--npt-gray); 
-    margin-bottom: 25px; 
+    margin-bottom: 35px; 
     font-size: 1.05rem;
     line-height: 1.6;
 }
 
-/* --- Notice Box Styling --- */
-/* Using NPTech Blue for "Information" to distinguish from "Action" (Green) */
-.notice-box {
-    background-color: rgba(6, 99, 175, 0.08); /* Light tint of NPT Blue */
-    border-left: 4px solid var(--npt-blue); 
-    padding: 15px 20px;
-    border-radius: 4px;
+/* --- Form Sections --- */
+.form-section {
+    margin-bottom: 40px;
+    padding-bottom: 35px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+/* UPDATED: Modern Section Headers */
+.section-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.35rem; /* Larger */
+    font-weight: 800;   /* Bolder */
+    color: var(--npt-black);
     margin-bottom: 30px;
     display: flex;
-    align-items: flex-start;
-    gap: 12px;
+    align-items: center;
+    gap: 16px;
+    letter-spacing: -0.5px; /* Tighter tracking for modern look */
 }
 
-.notice-box i {
-    color: var(--npt-blue);
-    font-size: 1.2rem;
-    margin-top: 2px;
+.section-title span {
+    background: var(--cfn-green); /* Brand Green */
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(3, 166, 60, 0.25); /* Glow shadow */
+    flex-shrink: 0;
 }
 
-.notice-box p {
-    margin: 0;
-    font-size: 0.95rem;
-    color: var(--npt-black);
-    line-height: 1.5;
-}
-
-.form-group {
-    margin-bottom: 25px;
-}
+/* --- Form Inputs --- */
+.form-group { margin-bottom: 25px; }
 
 .form-group-row {
     display: flex;
     gap: 20px;
 }
 
-.form-group-row .form-group {
-    flex: 1;
-}
+.form-group-row .form-group { flex: 1; }
 
 label {
     display: block;
@@ -158,7 +161,6 @@ label {
     font-weight: 600;
     margin-bottom: 8px;
     color: var(--npt-gray);
-    text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
@@ -179,16 +181,11 @@ input[type="tel"] {
 input:focus {
     outline: none;
     background-color: #fff;
-    /* Focus: CFN Green */
     border-color: var(--cfn-green);
     box-shadow: 0 0 0 4px rgba(3, 166, 60, 0.1);
 }
 
-/* Readonly Address Style */
-.readonly-input-wrapper {
-    position: relative;
-}
-
+.readonly-input-wrapper { position: relative; }
 .readonly-input-wrapper input {
     background-color: var(--npt-white); 
     color: var(--npt-gray);
@@ -196,7 +193,6 @@ input:focus {
     cursor: not-allowed;
     font-weight: 500;
 }
-
 .readonly-input-wrapper i {
     position: absolute;
     right: 15px;
@@ -205,16 +201,351 @@ input:focus {
     color: #9ca3af;
 }
 
-.g-recaptcha {
-    margin: 30px 0;
+/* --- Plan Display Card (In-Form) --- */
+.plan-display-card {
+    background: #fdfdfd;
+    border: 1px solid #e5e7eb;
+    border-left: 5px solid var(--cfn-green);
+    border-radius: 8px;
+    padding: 25px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 }
 
-.form-footer {
-    margin-top: 10px;
+.plan-display-info h4 {
+    margin: 0 0 5px 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--npt-black);
 }
+
+.plan-display-speed {
+    font-weight: 600;
+    color: var(--npt-gray);
+    font-size: 1rem;
+}
+
+.plan-display-speed i { color: var(--cfn-green); margin-right: 5px; }
+
+.plan-display-price {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--cfn-green);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* --- Stickers (New) --- */
+.plan-stickers-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.sticker-badge {
+    background-color: #e6f7ec; 
+    color: var(--cfn-dk-green);
+    border: 1px solid var(--cfn-light-green);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.sticker-badge i {
+    color: var(--cfn-green);
+    font-size: 0.8rem;
+}
+
+/* --- Sidebar Summary Styles (Updated) --- */
+/* Reuse .pricing-box for container styling but add specific overrides */
+.pricing-box.secondary-box {
+    margin-top: 25px;
+    padding: 25px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    border: 1px solid #f0f0f0;
+}
+
+.panel-heading.small-heading {
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 10px;
+}
+
+/* Rows inside secondary boxes */
+.fee-rows-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.fee-row-item {
+    border-bottom: 1px dashed #e5e7eb;
+    padding-bottom: 12px;
+}
+
+.fee-row-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.fee-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* Align centers vertically */
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.95rem;
+    color: var(--npt-black);
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+/* NEW: Header grouping for Icon + Text */
+.fee-item-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+}
+
+/* NEW: Green Circle Icon Container */
+.fee-icon {
+    width: 50px;
+    height:50px;
+    background-color: #e6f7ec; /* Light green tint */
+    border: 1px solid var(--cfn-light-green);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--cfn-green);
+    font-size: 0.85rem;
+}
+
+.fee-icon img {
+    max-width: 130%;
+    max-height: 130%;
+    object-fit: contain;
+}
+
+.fee-price {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.fee-note {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 2px;
+    font-style: italic;
+    line-height: 1.3;
+    /* Indent note to align with text, assuming icon width + gap */
+    padding-left: 44px; 
+}
+
+.crossed-text {
+    text-decoration: line-through;
+    color: #9ca3af;
+    font-weight: 400;
+    font-size: 0.85rem;
+    margin-right: 5px;
+}
+
+.free-text {
+    color: var(--cfn-green);
+    font-weight: 800;
+}
+
+/* --- Add-on Cards --- */
+.addons-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.addon-card {
+    display: block;
+    position: relative;
+    background: #ffffff;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px 25px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hide actual checkbox */
+.addon-card input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    height: 0;
+    width: 0;
+}
+
+.addon-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.addon-icon {
+    width: 45px;
+    height: 45px;
+    background-color: #f3f4f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: var(--npt-gray);
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.addon-details { flex-grow: 1; }
+
+.addon-name {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--npt-black);
+    margin-bottom: 4px;
+}
+
+.addon-desc {
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.addon-price {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    color: var(--npt-black);
+    font-size: 1.1rem;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.addon-price small {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+/* Selected State */
+.selected-check {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: white;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    color: var(--cfn-green);
+    display: none; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.addon-card:has(input:checked) {
+    border-color: var(--cfn-green);
+    background-color: #f0fdf4; 
+    box-shadow: 0 4px 12px rgba(3, 166, 60, 0.15);
+}
+
+.addon-card:has(input:checked) .addon-icon {
+    background-color: var(--cfn-green);
+    color: white;
+}
+
+.addon-card:has(input:checked) .selected-check {
+    display: block;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.addon-card:hover {
+    border-color: #d1d5db;
+    transform: translateY(-2px);
+}
+.addon-card:has(input:checked):hover { border-color: var(--cfn-green); }
+
+/* Nested Card (Long Distance) Logic */
+.nested-card {
+    display: none;
+    margin-left: 30px;
+    width: calc(100% - 30px);
+    border-style: dashed;
+    background-color: #fafafa;
+}
+
+.nested-card.visible {
+    display: block;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes popIn {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Finalize Section --- */
+textarea.special-req-input {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 1rem;
+    resize: vertical;
+    transition: all 0.2s;
+}
+textarea.special-req-input:focus {
+    outline: none;
+    border-color: var(--cfn-green);
+}
+
+.notice-box {
+    background-color: rgba(6, 99, 175, 0.08); 
+    border-left: 4px solid var(--npt-blue); 
+    padding: 15px 20px;
+    border-radius: 4px;
+    margin: 20px 0 30px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+.notice-box i {
+    color: var(--npt-blue);
+    font-size: 1.2rem;
+    margin-top: 2px;
+}
+.notice-box p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--npt-black);
+    line-height: 1.5;
+}
+
+.g-recaptcha { margin: 20px 0; }
 
 #submit-btn {
-    /* Primary Action: CFN Green */
     background-color: var(--cfn-green);
     color: white;
     border: none;
@@ -228,13 +559,11 @@ input:focus {
     transition: all 0.2s;
     box-shadow: 0 4px 6px rgba(3, 166, 60, 0.2);
 }
-
 #submit-btn:hover {
     background-color: var(--cfn-dk-green);
     transform: translateY(-1px);
     box-shadow: 0 6px 12px rgba(3, 166, 60, 0.3);
 }
-
 #submit-btn:disabled {
     background-color: #d1d5db;
     color: #9ca3af;
@@ -246,8 +575,7 @@ input:focus {
 /* --- Right Column: Summary --- */
 .summary-container {
     flex: 1; 
-    position: sticky;
-    top: 110px; 
+    /* Static by default now */
 }
 
 .summary-container h3 {
@@ -257,11 +585,10 @@ input:focus {
     color: var(--npt-gray);
     font-size: 1.2rem;
     font-weight: 700;
-    text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-/* --- Reusing Pricing Card Styles for Summary --- */
+/* Pricing Card Styles (reused from pricing.css logic) */
 .pricing-box {
     background: #ffffff;
     border-radius: 16px;
@@ -272,16 +599,11 @@ input:focus {
     position: relative;
     border: 1px solid #f0f0f0;
 }
-
-/* Premium/Popular Styling for Summary */
 .pricing-box.popular {
-    position: relative;
     background: white;
     border: none;
     z-index: 1;
 }
-
-/* Gold Effect maintained as per branding preference */
 .pricing-box.popular::before {
     content: "";
     position: absolute;
@@ -290,19 +612,12 @@ input:focus {
     padding: 3px;
     background: linear-gradient(110deg, #d4af37 0%, #f9e076 20%, #d4af37 40%, #f9e076 60%, #d4af37 80%, #f9e076 100%);
     background-size: 200% 100%;
-    animation: goldShimmer 3s linear infinite;
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
     z-index: 2;
 }
-
-@keyframes goldShimmer {
-    0% { background-position: 100% 0; }
-    100% { background-position: -100% 0; }
-}
-
 .popular-badge {
     position: absolute;
     top: 0;
@@ -318,11 +633,9 @@ input:focus {
     font-size: 0.8rem;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     white-space: nowrap;
-    animation: goldShimmer 3s linear infinite;
     text-transform: uppercase;
     z-index: 3;
 }
-
 .panel-heading {
     font-family: 'Montserrat', sans-serif;
     font-size: 1.6rem;
@@ -330,7 +643,6 @@ input:focus {
     color: var(--npt-black);
     margin-bottom: 15px;
 }
-
 .price {
     display: block;
     font-family: 'Montserrat', sans-serif;
@@ -340,14 +652,12 @@ input:focus {
     line-height: 1;
     margin-bottom: 5px;
 }
-
 .price small {
     font-family: 'Open Sans', sans-serif;
     font-size: 1rem;
     font-weight: 600;
     color: var(--npt-gray);
 }
-
 .speed-features {
     font-family: 'Montserrat', sans-serif;
     font-size: 1.5rem;
@@ -355,14 +665,12 @@ input:focus {
     color: var(--npt-black);
     margin-top: 15px;
 }
-
 .speed-capability {
     font-size: 0.95rem;
     color: var(--npt-gray);
     margin-bottom: 25px;
     font-weight: 500;
 }
-
 .core-benefits {
     background-color: var(--npt-white);
     padding: 15px;
@@ -372,7 +680,6 @@ input:focus {
     gap: 10px;
     border: 1px solid #f3f4f6;
 }
-
 .highlight-text {
     font-weight: 600;
     color: var(--npt-gray);
@@ -382,7 +689,6 @@ input:focus {
     justify-content: center;
     gap: 8px;
 }
-
 .highlight-text::before {
     content: "\f00c";
     font-family: "Font Awesome 6 Free";
@@ -390,68 +696,30 @@ input:focus {
     color: var(--cfn-green);
 }
 
-/* --- Footer (Unified with other pages) --- */
+/* --- Footer --- */
 .footer-container {
-    background-color: #ffffff; /* Changed to White to match other pages */
+    background-color: #ffffff;
     border-top: 1px solid #e0e0e0;
     padding: 40px 20px;
     text-align: center;
     margin-top: 80px;
 }
-
 .footer-container p {
     margin: 8px 0;
     color: var(--npt-gray);
     font-size: 0.9rem;
 }
 
-.footer-container a {
-    color: var(--cfn-green);
-    text-decoration: none;
-    font-weight: 600;
-    margin: 0 10px;
-    transition: color 0.2s ease;
-}
-
-.footer-container a:hover {
-    color: var(--cfn-dk-green);
-    text-decoration: underline;
-}
-
-/* --- Mobile Responsiveness --- */
+/* --- Responsive --- */
 @media (max-width: 900px) {
-    .signup-layout {
-        flex-direction: column-reverse; 
-    }
-    
-    .form-container, .summary-container {
-        width: 100%;
-        max-width: 100%;
-    }
-
-    .form-container {
-        padding: 30px 20px;
-    }
-
-    .summary-container {
-        position: static; 
-        margin-bottom: 20px;
-    }
-
-    .form-group-row {
-        flex-direction: column;
-        gap: 0;
-    }
-    
-    .logo-container {
-        flex-direction: column;
-        gap: 10px;
-    }
-    .logo-img {
-        max-height: 40px;
-    }
-    .site-header {
-        height: auto;
-        padding: 15px 20px;
-    }
+    .signup-layout { flex-direction: column-reverse; }
+    .form-container, .summary-container { width: 100%; }
+    .form-container { padding: 30px 20px; }
+    .summary-container { position: static; margin-bottom: 20px; }
+    .form-group-row { flex-direction: column; gap: 0; }
+    .logo-container { flex-direction: column; gap: 10px; }
+    .site-header { height: auto; padding: 15px 20px; }
+    .addon-content { flex-direction: column; text-align: center; gap: 10px; }
+    .addon-details { margin-bottom: 5px; }
+    .addon-price { text-align: center; }
 }

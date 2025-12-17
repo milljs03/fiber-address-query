@@ -14,7 +14,6 @@ const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__f
 };
 
 // --- SETTINGS ---
-// This is the URL of your deployed Cloud Function
 const FUNCTION_URL = "https://us-central1-fiber-service-query.cloudfunctions.net/createOrderSecure";
 
 const app = initializeApp(firebaseConfig);
@@ -25,7 +24,7 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'nptel-map-portal';
 let PLAN_DATA = {
     "Standard": { price: "$65", speed: "200 Mbps" },
     "Advanced": { price: "$80", speed: "500 Mbps" },
-    "Premium": { price: "$89", speed: "1 Gbps", isPopular: true }
+    "Premium": { price: "$89", speed: "1 Gbps", isPopular: true, freeInstall: true, freeRouter: true } 
 };
 
 // --- AUTH ---
@@ -64,9 +63,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (planKey) {
         document.getElementById('selected-plan').value = decodeURIComponent(planKey);
-        renderPlanSummary(planKey);
+        renderPlanInForm(planKey);  // Render section 2
+        updateOrderSummary();       // Render sidebar (Initial)
     } else {
-        document.getElementById('plan-card-container').innerHTML = "<p>No plan selected.</p>";
+        const noPlanMsg = "<p>No plan selected.</p>";
+        document.getElementById('plan-card-container').innerHTML = noPlanMsg;
+        document.getElementById('selected-plan-display').innerHTML = noPlanMsg;
     }
 
     // 4. Setup Add-on Logic
@@ -76,25 +78,67 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (orderForm) orderForm.addEventListener('submit', handleOrderSubmit);
 });
 
-function setupAddonInteractions() {
-    const phoneCheckbox = document.getElementById('addon-phone');
-    const phoneOptions = document.getElementById('phone-options');
-    const longDistanceCheckbox = document.getElementById('addon-long-distance');
+function renderPlanInForm(planKey) {
+    const container = document.getElementById('selected-plan-display');
+    const plan = PLAN_DATA[planKey];
+    
+    if (!plan) return;
 
-    if (phoneCheckbox && phoneOptions) {
-        phoneCheckbox.addEventListener('change', () => {
-            if (phoneCheckbox.checked) {
-                phoneOptions.classList.add('visible');
-            } else {
-                phoneOptions.classList.remove('visible');
-                // Uncheck child option if parent is unchecked
-                if (longDistanceCheckbox) longDistanceCheckbox.checked = false;
-            }
-        });
+    const priceDisplay = plan.promoPrice ? 
+        `<span style="text-decoration: line-through; color: #999; font-size: 1.2rem; margin-right: 10px;">${plan.price}</span> 
+         <span style="color: #dc2626;">${plan.promoPrice}<small>/mo</small></span>` : 
+        `<span>${plan.price}<small>/mo</small></span>`;
+
+    let stickersHtml = '';
+    if (plan.stickers) {
+        const stickersList = Array.isArray(plan.stickers) ? plan.stickers : [plan.stickers];
+        if (stickersList.length > 0) {
+             stickersHtml = `<div class="plan-stickers-row">`;
+             stickersList.forEach(sticker => {
+                 stickersHtml += `<div class="sticker-badge"><i class="fa-solid fa-check"></i> ${sticker}</div>`;
+             });
+             stickersHtml += `</div>`;
+        }
     }
+
+    container.innerHTML = `
+        <div class="plan-display-info">
+            <h4>${planKey} Internet</h4>
+            <div class="plan-display-speed"><i class="fa-solid fa-gauge-high"></i> ${plan.speed} Download & Upload</div>
+            ${stickersHtml}
+        </div>
+        <div class="plan-display-price">
+            ${priceDisplay}
+        </div>
+    `;
 }
 
-function renderPlanSummary(planKey) {
+function setupAddonInteractions() {
+    const phoneCheckbox = document.getElementById('addon-phone');
+    const longDistanceCard = document.getElementById('card-long-distance');
+    const longDistanceCheckbox = document.getElementById('addon-long-distance');
+    const routerCheckbox = document.getElementById('addon-router');
+
+    const update = () => updateOrderSummary();
+
+    if (phoneCheckbox && longDistanceCard) {
+        phoneCheckbox.addEventListener('change', () => {
+            if (phoneCheckbox.checked) {
+                longDistanceCard.classList.add('visible');
+            } else {
+                longDistanceCard.classList.remove('visible');
+                if (longDistanceCheckbox) longDistanceCheckbox.checked = false;
+            }
+            update();
+        });
+    }
+
+    if (longDistanceCheckbox) longDistanceCheckbox.addEventListener('change', update);
+    if (routerCheckbox) routerCheckbox.addEventListener('change', update);
+}
+
+function updateOrderSummary() {
+    const planKey = document.getElementById('selected-plan').value;
     const container = document.getElementById('plan-card-container');
     const plan = PLAN_DATA[planKey];
 
@@ -103,6 +147,25 @@ function renderPlanSummary(planKey) {
         return;
     }
 
+    // --- CHECK STICKERS FOR WAIVED FEES ---
+    let isFreeInstall = !!plan.freeInstall;
+    let isFreeRouter = !!plan.freeRouter;
+
+    if (plan.stickers) {
+        const stickersList = Array.isArray(plan.stickers) ? plan.stickers : [plan.stickers];
+        const lowerStickers = stickersList.map(s => s.toLowerCase());
+        
+        if (lowerStickers.some(s => s.includes('free install') || s.includes('no install fee'))) {
+            isFreeInstall = true;
+        }
+        
+        if (lowerStickers.some(s => s.includes('free router') || s.includes('free equipment') || s.includes('no equipment fee') || s.includes('no router fee'))) {
+            isFreeRouter = true;
+        }
+    }
+    // -------------------------------------
+
+    // 1. Build Plan Card
     const isPopular = (typeof plan.isPopular !== 'undefined') ? plan.isPopular : false;
     const popularClass = isPopular ? 'popular' : '';
     const popularBadge = isPopular ? '<div class="popular-badge">Most Popular</div>' : '';
@@ -114,51 +177,156 @@ function renderPlanSummary(planKey) {
          <div style="font-weight: bold; color: #dc2626; margin-bottom: 10px;">${plan.promoLabel || 'Special Offer'}</div>` : 
         `<span class="price">${plan.price}<small>/mo</small></span>`;
 
-    const html = `
+    let stickersHtml = '';
+    if (plan.stickers) {
+        const stickersList = Array.isArray(plan.stickers) ? plan.stickers : [plan.stickers];
+        if (stickersList.length > 0) {
+             stickersHtml = `<div class="plan-stickers-row" style="justify-content: center; margin-bottom: 15px;">`;
+             stickersList.forEach(sticker => {
+                 stickersHtml += `<div class="sticker-badge"><i class="fa-solid fa-check"></i> ${sticker}</div>`;
+             });
+             stickersHtml += `</div>`;
+        }
+    }
+
+    let html = `
         <div class="pricing-box ${popularClass}" style="max-width: 100%;">
             ${popularBadge}
             <div class="panel-heading">${planKey}</div>
             <div class="panel-body">
                 ${priceHtml}
+                ${stickersHtml}
                 <div class="speed-features">${plan.speed}</div>
                 <div class="speed-capability">Download & Upload</div>
                 <div class="core-benefits">
                     <span class="highlight-text">Local Service</span>
-                    <span class="highlight-text">Lifetime Price Lock</span>
+                    <span class="highlight-text">No Contracts</span>
+                    <span class="highlight-text">No Data Caps</span>
                 </div>
             </div>
         </div>
     `;
+
+    // 2. Build Fees Section (Secondary Box)
+    html += `
+        <div class="pricing-box secondary-box">
+            <div class="panel-heading small-heading">One-time Fees</div>
+            <div class="fee-rows-container">
+    `;
+
+    // Install Fee Logic
+    const installFeeDisplay = isFreeInstall ? 
+        `<div class="fee-price"><span class="crossed-text">$50 - $150</span> <span class="free-text">0.00 on us!</span></div>` : 
+        `<div class="fee-price">$50 - $150*</div>`;
+    
+    html += `
+        <div class="fee-row-item">
+            <div class="fee-line">
+                <div class="fee-item-header">
+                    <div class="fee-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                    <span>Installation</span>
+                </div>
+                ${installFeeDisplay}
+            </div>
+            <div class="fee-note">*Distance house is from the road will determine install price.</div>
+        </div>
+    `;
+
+    // Router Fee Logic
+    const routerFeeDisplay = isFreeRouter ? 
+        `<div class="fee-price"><span class="crossed-text">$99.00</span> <span class="free-text">0.00 on us!</span></div>` : 
+        `<div class="fee-price">$99.00</div>`;
+
+    html += `
+        <div class="fee-row-item">
+            <div class="fee-line">
+                <div class="fee-item-header">
+                    <div class="fee-icon"><img src="logos/Eero_(1).png" alt="Eero"></div>
+                    <span>Eero 6+ Mesh Unit</span>
+                </div>
+                ${routerFeeDisplay}
+            </div>
+            <div class="fee-note">High-performance Wi-Fi 6 router.</div>
+        </div>
+    `;
+    
+    html += `</div></div>`; // Close fee container and box
+
+    // 3. Build Add-ons Section (Secondary Box)
+    const phoneChecked = document.getElementById('addon-phone')?.checked;
+    const longDistanceChecked = document.getElementById('addon-long-distance')?.checked;
+    const routerChecked = document.getElementById('addon-router')?.checked;
+
+    if (phoneChecked || routerChecked) {
+        html += `
+            <div class="pricing-box secondary-box">
+                <div class="panel-heading small-heading">Selected Add-ons</div>
+                <div class="fee-rows-container">
+        `;
+        
+        if (phoneChecked) {
+            html += `
+            <div class="fee-row-item">
+                <div class="fee-line">
+                    <div class="fee-item-header">
+                        <div class="fee-icon"><i class="fa-solid fa-phone"></i></div>
+                        <span>Home Phone</span>
+                    </div>
+                    <div class="fee-price">+$20.65<small>/mo</small></div>
+                </div>
+            </div>`;
+            
+            if (longDistanceChecked) {
+                html += `
+                <div class="fee-row-item">
+                    <div class="fee-line">
+                        <div class="fee-item-header">
+                            <div class="fee-icon"><i class="fa-solid fa-earth-americas"></i></div>
+                            <span>Unltd. Long Distance</span>
+                        </div>
+                        <div class="fee-price">+$4.95<small>/mo</small></div>
+                    </div>
+                </div>`;
+            }
+        }
+
+        if (routerChecked) {
+            html += `
+            <div class="fee-row-item">
+                <div class="fee-line">
+                    <div class="fee-item-header">
+                        <div class="fee-icon"><i class="fa-solid fa-wifi"></i></div>
+                        <span>Extra Mesh Router</span>
+                    </div>
+                    <div class="fee-price">+$99.00</div>
+                </div>
+            </div>`;
+        }
+
+        html += `</div></div>`; // Close addon container and box
+    }
+
     container.innerHTML = html;
 }
 
+// ... rest of handleOrderSubmit ...
 async function handleOrderSubmit(e) {
     e.preventDefault();
     const btn = document.getElementById('submit-btn');
     
-    // --- PREPARE PLAN DETAILS FOR EMAIL ---
     const planKey = document.getElementById('selected-plan').value;
     const planData = PLAN_DATA[planKey] || {};
     
     let planDetails = planKey;
     const extraDetails = [];
 
-    // Add stickers/perks
-    if (planData.stickers) {
-        extraDetails.push(planData.stickers);
-    }
+    if (planData.stickers) { extraDetails.push(planData.stickers); }
 
-    // Add price
     const effectivePrice = planData.promoPrice || planData.price;
-    if (effectivePrice) {
-        extraDetails.push(`${effectivePrice}/mo`);
-    }
+    if (effectivePrice) { extraDetails.push(`${effectivePrice}/mo`); }
 
-    if (extraDetails.length > 0) {
-        planDetails += ` - ${extraDetails.join(', ')}`;
-    }
+    if (extraDetails.length > 0) { planDetails += ` - ${extraDetails.join(', ')}`; }
     
-    // --- COLLECT ADD-ONS ---
     const addOns = [];
     
     const phoneChecked = document.getElementById('addon-phone')?.checked;
@@ -179,8 +347,6 @@ async function handleOrderSubmit(e) {
 
     const specialRequests = document.getElementById('special-requests')?.value || "";
 
-    // -------------------------------------
-
     const orderDetails = {
         name: document.getElementById('name').value,
         email: document.getElementById('email').value,
@@ -188,8 +354,8 @@ async function handleOrderSubmit(e) {
         address: document.getElementById('address').value,
         plan: planKey,
         planDetails: planDetails, 
-        addOns: addOns,              // NEW: Array of selected addons
-        specialRequests: specialRequests, // NEW: User notes
+        addOns: addOns,              
+        specialRequests: specialRequests, 
         uid: auth.currentUser ? auth.currentUser.uid : 'anon'
     };
 

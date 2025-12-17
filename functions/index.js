@@ -138,10 +138,7 @@ exports.createOrderSecure = onRequest(
                                     ${safeAddOns !== "None" ? '<p>&bull; ' + safeAddOns + '</p>' : '<p>None selected</p>'}
                                 </div>
 
-                                <div style="background: #fff; border: 1px solid #eee; padding: 15px; border-radius: 5px; margin-top: 15px;">
-                                    <h3 style="margin-top:0;">Special Requests / Notes</h3>
-                                    <p>${safeSpecialRequests}</p>
-                                </div>
+
                                 <hr>
                                 <p><em>Verified via ReCAPTCHA</em></p>
                             </div>

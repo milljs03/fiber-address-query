@@ -8,71 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="/favicon.png">
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    <style>
-        /* Inline styles for the new Add-ons section */
-        .addons-section {
-            background-color: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        .addons-header {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: #1f2937;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .checkbox-group {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .checkbox-group input[type="checkbox"] {
-            margin-top: 4px;
-            width: 18px;
-            height: 18px;
-            accent-color: #1e3c72;
-            cursor: pointer;
-        }
-        .checkbox-label {
-            font-size: 0.95rem;
-            color: #374151;
-            cursor: pointer;
-        }
-        .checkbox-price {
-            font-weight: 600;
-            color: #1e3c72;
-        }
-        .nested-option {
-            margin-left: 28px;
-            padding: 8px;
-            background: #fff;
-            border-left: 3px solid #e5e7eb;
-            margin-bottom: 10px;
-            display: none; /* Hidden by default */
-        }
-        .nested-option.visible {
-            display: block;
-        }
-        textarea.special-req-input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-family: inherit;
-            resize: vertical;
-            box-sizing: border-box; 
-        }
-        textarea.special-req-input:focus {
-            outline: none;
-            border-color: #1e3c72;
-        }
-    </style>
 </head>
 <body>
 
@@ -94,94 +29,127 @@
             <!-- Left Column: Form -->
             <div class="form-container">
                 <div class="form-header">
-                    <h2><i class="fa-solid fa-clipboard-check"></i> Great Pick!</h2>
-                    <p>You're one step closer to fiber internet. Please provide your details to finalize the request.</p>
-                </div>
-
-                <!-- New Notice Section -->
-                <div class="notice-box">
-                    <i class="fa-solid fa-circle-info"></i>
-                    <p><strong>Note:</strong> One of our employees will reach out to confirm service availability and request additional billing information.</p>
+                    <h2>Finalize Order</h2>
+                    <p>You're one step closer to fiber internet.</p>
                 </div>
 
                 <form id="orderForm">
-                    <div class="form-group">
-                        <label for="name">Full Name</label>
-                        <input type="text" id="name" name="name" placeholder="John Doe" required>
-                    </div>
-
-                    <div class="form-group-row">
+                    
+                    <!-- SECTION 1: Personal Info -->
+                    <div class="form-section">
+                        <div class="section-title"><span>1</span> Contact Information</div>
                         <div class="form-group">
-                            <label for="email">Email Address</label>
-                            <input type="email" id="email" name="email" placeholder="john@example.com" required>
+                            <label for="name">Full Name</label>
+                            <input type="text" id="name" name="name" placeholder="John Doe" required>
                         </div>
-                        <div class="form-group">
-                            <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone" name="phone" placeholder="(555) 123-4567" required>
-                        </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label for="address">Service Address</label>
-                        <div class="readonly-input-wrapper">
-                            <input type="text" id="address" name="address" readonly>
-                            <i class="fa-solid fa-lock"></i>
-                        </div>
-                    </div>
-
-                    <!-- NEW: Add-ons Section -->
-                    <div class="addons-section">
-                        <div class="addons-header"><i class="fa-solid fa-plus-circle"></i> Add-ons & Extras</div>
-                        
-                        <!-- Phone Service -->
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="addon-phone" name="addon-phone">
-                            <label for="addon-phone" class="checkbox-label">
-                                Home Phone Service <span class="checkbox-price">(+$20.65/mo)</span>
-                            </label>
-                        </div>
-                        
-                        <!-- Nested: Long Distance (Hidden unless phone is checked) -->
-                        <div id="phone-options" class="nested-option">
-                            <div class="checkbox-group" style="margin-bottom: 0;">
-                                <input type="checkbox" id="addon-long-distance" name="addon-long-distance">
-                                <label for="addon-long-distance" class="checkbox-label">
-                                    Add Unlimited Long Distance <span class="checkbox-price">(+$4.95/mo)</span>
-                                </label>
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input type="email" id="email" name="email" placeholder="john@example.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">Phone Number</label>
+                                <input type="tel" id="phone" name="phone" placeholder="(555) 123-4567" required>
                             </div>
                         </div>
 
-                        <!-- Extra Router -->
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="addon-router" name="addon-router">
-                            <label for="addon-router" class="checkbox-label">
-                                Extra Mesh Router <span class="checkbox-price">(+$99.00 one-time fee)</span>
+                        <div class="form-group">
+                            <label for="address">Service Address</label>
+                            <div class="readonly-input-wrapper">
+                                <input type="text" id="address" name="address" readonly>
+                                <i class="fa-solid fa-lock"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 2: Selected Plan Display -->
+                    <div class="form-section">
+                        <div class="section-title"><span>2</span> Your Selected Plan</div>
+                        <!-- This container is populated by JS -->
+                        <div id="selected-plan-display" class="plan-display-card">
+                            <div class="plan-loading">Loading plan details...</div>
+                        </div>
+                        <input type="hidden" id="selected-plan" name="plan">
+                    </div>
+
+                    <!-- SECTION 3: Add-ons (Rectangular Cards) -->
+                    <div class="form-section">
+                        <div class="section-title"><span>3</span>Optional Add-Ons</div>
+                        <div class="addons-grid">
+                            
+                            <!-- Phone Service Card -->
+                            <label class="addon-card" id="card-phone">
+                                <input type="checkbox" id="addon-phone" name="addon-phone">
+                                <div class="addon-content">
+                                    <div class="addon-icon"><i class="fa-solid fa-phone"></i></div>
+                                    <div class="addon-details">
+                                        <div class="addon-name">Home Phone Service</div>
+                                    
+                                        <div class="addon-desc" style="margin-top: 5px;">Keep your existing home number and have it ported to Community Fiber.</div>
+                                    </div>
+                                    <div class="addon-price">+$20.65<small>/mo</small></div>
+                                </div>
+                                <div class="selected-check"><i class="fa-solid fa-circle-check"></i></div>
                             </label>
-                        </div>
+                            
+                            <!-- Long Distance (Hidden initially via JS logic) -->
+                            <label class="addon-card nested-card" id="card-long-distance">
+                                <input type="checkbox" id="addon-long-distance" name="addon-long-distance">
+                                <div class="addon-content">
+                                    <div class="addon-icon"><i class="fa-solid fa-earth-americas"></i></div>
+                                    <div class="addon-details">
+                                        <div class="addon-name">Unlimited Long Distance</div>
+                                        <div class="addon-desc">Call anywhere, anytime.</div>
+                                    </div>
+                                    <div class="addon-price">+$4.95<small>/mo</small></div>
+                                </div>
+                                <div class="selected-check"><i class="fa-solid fa-circle-check"></i></div>
+                            </label>
 
-                        <!-- Special Requests -->
-                        <div style="margin-top: 15px;">
-                            <label for="special-requests" style="display:block; font-weight:bold; margin-bottom:5px; font-size:0.9rem;">Special Requests / Notes</label>
-                            <textarea id="special-requests" class="special-req-input" name="special-requests" rows="3" placeholder="Examples: Gate codes, dogs in yard, specific install location preferences, etc."></textarea>
+                            <!-- Router Card -->
+                            <label class="addon-card" id="card-router">
+                                <input type="checkbox" id="addon-router" name="addon-router">
+                                <div class="addon-content">
+                                        <img src="logos/Eero_(2).png" alt="Eero Router" style="width: 65px; height: auto;">
+                                    <div class="addon-details">
+                                        <div class="addon-name">Extra Mesh Router</div>
+                                        <div class="addon-desc" style="margin-top: 5px;">Extra Eero 6+ router is recommended for multi-floor homes or larger houses.</div>
+                                    </div>
+                                    <div class="addon-price">+$99.00<small> (one-time)</small></div>
+                                </div>
+                                <div class="selected-check"><i class="fa-solid fa-circle-check"></i></div>
+                            </label>
+
                         </div>
                     </div>
 
-                    <!-- Hidden Input for Plan -->
-                    <input type="hidden" id="selected-plan" name="plan">
+                    <!-- SECTION 4: Finalize -->
+                    <div class="form-section">
+                        <div class="section-title"><span>4</span> Complete Order</div>
+                        
 
-                    <!-- reCAPTCHA -->
-                    <!-- REPLACE WITH YOUR SITE KEY -->
-                    <div class="g-recaptcha" data-sitekey="6Lduo28rAAAAAJtiCUnbRY4z_WagijZjllGt8xZS"></div>
 
-                    <div class="form-footer">
-                        <button type="submit" id="submit-btn">Complete Order</button>
+                        <!-- Notice Box moved here -->
+                        <div class="notice-box">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <p><strong>Next Steps:</strong> One of our employees will reach out to confirm availability and set up your billing profile.</p>
+                        </div>
+
+                        <!-- reCAPTCHA -->
+                        <div class="g-recaptcha" data-sitekey="6Lduo28rAAAAAJtiCUnbRY4z_WagijZjllGt8xZS"></div>
+
+                        <div class="form-footer">
+                            <button type="submit" id="submit-btn">Place Order</button>
+                        </div>
                     </div>
+
                 </form>
             </div>
 
             <!-- Right Column: Order Summary (Dynamic Plan Card) -->
             <div class="summary-container">
-                <h3>Order Summary</h3>
+                <h3>Order Preview</h3>
                 <div id="plan-card-container">
                     <!-- The selected plan card will be injected here by JS -->
                 </div>
