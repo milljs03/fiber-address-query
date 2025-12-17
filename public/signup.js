@@ -29,7 +29,6 @@ let PLAN_DATA = {
 };
 
 // --- AUTH ---
-// IMPORTANT: You MUST enable "Anonymous" sign-in in Firebase Console -> Authentication
 async function initAuth() { 
     try { 
         await signInAnonymously(auth); 
@@ -70,9 +69,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('plan-card-container').innerHTML = "<p>No plan selected.</p>";
     }
 
+    // 4. Setup Add-on Logic
+    setupAddonInteractions();
+
     const orderForm = document.getElementById('orderForm');
     if (orderForm) orderForm.addEventListener('submit', handleOrderSubmit);
 });
+
+function setupAddonInteractions() {
+    const phoneCheckbox = document.getElementById('addon-phone');
+    const phoneOptions = document.getElementById('phone-options');
+    const longDistanceCheckbox = document.getElementById('addon-long-distance');
+
+    if (phoneCheckbox && phoneOptions) {
+        phoneCheckbox.addEventListener('change', () => {
+            if (phoneCheckbox.checked) {
+                phoneOptions.classList.add('visible');
+            } else {
+                phoneOptions.classList.remove('visible');
+                // Uncheck child option if parent is unchecked
+                if (longDistanceCheckbox) longDistanceCheckbox.checked = false;
+            }
+        });
+    }
+}
 
 function renderPlanSummary(planKey) {
     const container = document.getElementById('plan-card-container');
@@ -128,16 +148,37 @@ async function handleOrderSubmit(e) {
         extraDetails.push(planData.stickers);
     }
 
-    // Add price (Use promo price if available)
+    // Add price
     const effectivePrice = planData.promoPrice || planData.price;
     if (effectivePrice) {
         extraDetails.push(`${effectivePrice}/mo`);
     }
 
-    // Combine into "Plan - Sticker, Sticker, Price"
     if (extraDetails.length > 0) {
         planDetails += ` - ${extraDetails.join(', ')}`;
     }
+    
+    // --- COLLECT ADD-ONS ---
+    const addOns = [];
+    
+    const phoneChecked = document.getElementById('addon-phone')?.checked;
+    const longDistanceChecked = document.getElementById('addon-long-distance')?.checked;
+    const routerChecked = document.getElementById('addon-router')?.checked;
+
+    if (phoneChecked) {
+        let phoneText = "Home Phone Service ($20.65/mo)";
+        if (longDistanceChecked) {
+            phoneText += " + Unlimited Long Distance ($4.95/mo)";
+        }
+        addOns.push(phoneText);
+    }
+
+    if (routerChecked) {
+        addOns.push("Extra Mesh Router ($99.00 one-time fee)");
+    }
+
+    const specialRequests = document.getElementById('special-requests')?.value || "";
+
     // -------------------------------------
 
     const orderDetails = {
@@ -145,8 +186,10 @@ async function handleOrderSubmit(e) {
         email: document.getElementById('email').value,
         phone: document.getElementById('phone').value,
         address: document.getElementById('address').value,
-        plan: planKey,           // Original concise plan name for analytics
-        planDetails: planDetails, // Detailed string for email notification
+        plan: planKey,
+        planDetails: planDetails, 
+        addOns: addOns,              // NEW: Array of selected addons
+        specialRequests: specialRequests, // NEW: User notes
         uid: auth.currentUser ? auth.currentUser.uid : 'anon'
     };
 
@@ -165,7 +208,6 @@ async function handleOrderSubmit(e) {
     btn.textContent = "Securing Order...";
 
     try {
-        // --- USE STANDARD FETCH ---
         const response = await fetch(FUNCTION_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

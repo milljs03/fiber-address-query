@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
 // --- CONFIGURATION ---
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
@@ -13,8 +14,14 @@ const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__f
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'nptel-map-portal';
+
+// Automatically sign in anonymously so we can write to 'service_requests'
+signInAnonymously(auth).catch((error) => {
+    console.warn("Anonymous auth failed in pricing page. Saving quote might fail.", error);
+});
 
 // Hard fallback
 const FALLBACK_PLANS = {
@@ -191,6 +198,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     renderPlans(plansToShow, address, campaignId, campaignName);
+
+    // Initialize the Save for Later modal
+    setupSaveModal(address);
 });
 
 function renderPlans(plans, address, campaignId, campaignName) {
@@ -419,5 +429,64 @@ function bindEvents(address, campaignId) {
             const wrapper = e.target.closest('.sneak-peek-overlay').parentElement;
             if (wrapper) { wrapper.classList.remove('collapsed'); wrapper.classList.add('expanded'); }
         });
+    });
+}
+
+function setupSaveModal(address) {
+    const btn = document.getElementById('save-quote-btn');
+    const modal = document.getElementById('save-modal');
+    const closeBtn = document.getElementById('close-save-modal');
+    const form = document.getElementById('save-quote-form');
+
+    if(!btn || !modal) return;
+
+    btn.addEventListener('click', () => {
+        modal.style.display = 'flex';
+    });
+
+    closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    // Close on click outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.style.display = 'none';
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Saving...";
+
+        const name = document.getElementById('save-name').value;
+        const email = document.getElementById('save-email').value;
+        const phone = document.getElementById('save-phone').value;
+
+        try {
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'service_requests'), {
+                type: 'saved_quote', // Distinct type for Admin filtering
+                name: name,
+                email: email,
+                phone: phone,
+                address: address || "Unknown (Pricing Page)",
+                planOfInterest: "General / Alert Me", 
+                submittedAt: new Date(),
+                isAvailable: true, // Implicitly true if they are on pricing page
+                uid: auth.currentUser ? auth.currentUser.uid : 'anon'
+            });
+
+            alert("Success! We've saved your info and will alert you of any deals.");
+            modal.style.display = 'none';
+            form.reset();
+        } catch (error) {
+            console.error("Error saving lead:", error);
+            alert("Something went wrong. Please try again.");
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
     });
 }

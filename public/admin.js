@@ -547,18 +547,30 @@ function renderMainTable() {
             tableBody.appendChild(tr);
         });
     } else if (currentView === 'leads') {
+        // UPDATE: Enhanced Leads View with Badges
         tableHead.innerHTML = `
             <tr>
                 <th>Date</th>
                 <th>Name</th>
                 <th>Address</th>
                 <th>Contact Info</th>
-                <th>Type</th>
+                <th>Type / Interest</th>
             </tr>
         `;
         displayData.forEach(item => {
             let dateObj = item.submittedAt || item.checkedAt;
             const dateStr = dateObj && dateObj.toDate ? dateObj.toDate().toLocaleDateString() : 'N/A';
+            
+            // Logic to determine badge style
+            let typeBadge = '';
+            if (item.type === 'saved_quote') {
+                typeBadge = `<span style="background:#e3f2fd; color:#1565c0; padding:4px 8px; border-radius:4px; font-size:0.8em; font-weight:bold; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-cart-arrow-down"></i> Saved Cart</span>`;
+            } else if (item.isAvailable === false) {
+                 typeBadge = `<span style="background:#fff0f0; color:#d32f2f; padding:4px 8px; border-radius:4px; font-size:0.8em; font-weight:bold;">Unserviceable Lead</span>`;
+            } else {
+                 typeBadge = `<span style="background:#f3e5f5; color:#7b1fa2; padding:4px 8px; border-radius:4px; font-size:0.8em; font-weight:bold;">Manual Inquiry</span>`;
+            }
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${dateStr}</td>
@@ -568,7 +580,7 @@ function renderMainTable() {
                     ${item.email ? `<div><i class="fa-solid fa-envelope" style="font-size:0.8em"></i> ${item.email}</div>` : ''}
                     ${item.phone ? `<div><i class="fa-solid fa-phone" style="font-size:0.8em"></i> ${item.phone}</div>` : ''}
                 </td>
-                <td><span style="background:#fff0f0; color:#d32f2f; padding:2px 6px; border-radius:4px; font-size:0.8em; font-weight:bold;">Lead</span></td>`;
+                <td>${typeBadge}</td>`;
             tableBody.appendChild(tr);
         });
     } else if (currentView === 'activity') {
@@ -622,10 +634,12 @@ async function loadAnalyticsData() {
         let rawLeads = [];
         rawChecks.forEach(data => {
             if (data.type === 'manual_check' || (data.name && (data.phone || data.email))) {
+                // Ensure date exists for sorting
+                data.sortDate = data.submittedAt || data.checkedAt;
                 rawLeads.push(data);
             }
         });
-        cachedData.leads = getUniqueByAddress(rawLeads, 'address', 'submittedAt');
+        cachedData.leads = getUniqueByAddress(rawLeads, 'address', 'sortDate');
 
         // 4. Update Stats UI
         updateStatsUI(cachedData.orders, cachedData.activity, cachedData.leads);
@@ -760,7 +774,8 @@ async function exportLeadsToCSV() {
     cachedData.leads.forEach(d => {
         let dateObj = d.submittedAt || d.checkedAt;
         const date = dateObj && dateObj.toDate ? dateObj.toDate().toLocaleString() : ''; 
-        const row = [`"${date}"`, `"${d.name||''}"`, `"${d.phone||''}"`, `"${d.email||''}"`, `"${d.address||''}"`, `"Unserviceable Lead"`].join(",");
+        const type = d.type === 'saved_quote' ? 'Saved Cart' : (d.isAvailable === false ? 'Unserviceable Lead' : 'Manual Inquiry');
+        const row = [`"${date}"`, `"${d.name||''}"`, `"${d.phone||''}"`, `"${d.email||''}"`, `"${d.address||''}"`, `"${type}"`].join(",");
         csv += row + "\n";
     });
     downloadCSV(csv, "leads_report.csv");

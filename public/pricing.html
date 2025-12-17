@@ -7,6 +7,66 @@
     <link rel="stylesheet" href="pricing.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" type="image/png" href="/favicon.png">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@300;400;600;700&display=swap');
+
+        /* --- Brand Variables --- */
+        :root {
+            /* CFN Colors */
+            --cfn-green: #03A63C;
+            --cfn-dk-green: #0B8C38;
+            --cfn-mute-green: #46A66F;
+            --cfn-light-green: #8BD9AD;
+            
+            /* NPTech Colors */
+            --npt-blue: #0663AF;
+            --npt-lt-blue: #64ADD9;
+            --npt-gray: #4D4D4F;
+            --npt-white: #F2F2F2;
+            --npt-black: #141414;
+        }
+
+        /* Enhanced Button Styling */
+        .save-quote-btn {
+            background-color: white;
+            color: var(--cfn-green);
+            border: none;
+            padding: 12px 28px;
+            border-radius: 50px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 25px;
+        }
+
+        .save-quote-btn:hover {
+            background-color: var(--npt-white);
+            color: var(--cfn-dk-green);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+
+        .save-quote-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .save-quote-btn i {
+            font-size: 1.1em;
+        }
+
+        /* Ensure fonts are consistent */
+        body { font-family: 'Open Sans', sans-serif; }
+        h1, h2, h3 { font-family: 'Montserrat', sans-serif; }
+    </style>
 </head>
 <body>
 
@@ -23,22 +83,23 @@
     </header>
 
     <!-- Success Banner -->
-<div class="header-box">
+    <div class="header-box">
         <div class="content-width">
             <h1><i class="fa-solid fa-circle-check"></i> Congrats!</h1>
             <p>You are in our service territory. <br>Here are the speed tiers available for: <strong><span id="display-address">Your Address</span></strong></p>
             
+            <!-- Residential/Business Info Bubble -->
             <div style="
                 margin: 30px auto 0 auto; 
                 background-color: rgba(255, 255, 255, 0.15); 
                 border: 1px solid rgba(255, 255, 255, 0.3); 
                 border-radius: 12px; 
                 padding: 15px 30px; 
-                display: flex; /* Flexbox aligns items horizontally */
-                flex-wrap: wrap; /* Wraps to vertical on small screens */
-                justify-content: center; /* Centers items nicely with the gap */
+                display: flex; 
+                flex-wrap: wrap; 
+                justify-content: center; 
                 align-items: center; 
-                gap: 20px; /* Space between the two sentences */
+                gap: 20px; 
                 width: 90%; 
                 max-width: 800px;
                 box-shadow: 0 4px 15px rgba(0,0,0,0.05);
@@ -57,7 +118,15 @@
                     </a>
                 </span>
             </div>
+
+            <!-- NEW LOCATION: Save/Alert Button (Centered underneath bubble) -->
+            <div style="text-align: center;">
+                <button id="save-quote-btn" class="save-quote-btn">
+                    <i class="fa-regular fa-bell"></i> Get Price Alerts
+                </button>
             </div>
+
+        </div>
     </div>
 
     <!-- Pricing Cards Container (Populated by JS) -->
@@ -66,11 +135,68 @@
         <p style="text-align:center; width:100%; font-size:1.2rem; color:#666; margin-top:40px;">Loading available plans...</p>
     </div>
 
+    <!-- Save/Alert Modal -->
+    <div id="save-modal" class="modal-overlay" style="
+        display: none; 
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.6); z-index: 9999; 
+        backdrop-filter: blur(4px);
+        justify-content: center; align-items: center;">
+        
+        <div style="background: white; padding: 40px; border-radius: 16px; width: 90%; max-width: 420px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border-top: 6px solid var(--cfn-green);">
+            <button id="close-save-modal" style="position: absolute; top: 15px; right: 20px; border: none; background: none; font-size: 1.8rem; cursor: pointer; color: #999; transition: color 0.2s;">&times;</button>
+            
+            <h2 style="margin-top: 0; color: var(--npt-blue); font-size: 1.6rem; font-family: 'Montserrat', sans-serif; font-weight: 700;">
+                <i class="fa-solid fa-bookmark" style="color: var(--cfn-green);"></i> Save for Later
+            </h2>
+            <p style="color: var(--npt-gray); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6; font-family: 'Open Sans', sans-serif;">
+                Not ready to commit? Enter your details and we'll save your quote and alert you if prices drop in your area.
+            </p>
+
+            <form id="save-quote-form">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: 700; margin-bottom: 8px; color: var(--npt-gray); font-family: 'Montserrat', sans-serif; font-size: 0.9rem;">Name</label>
+                    <input type="text" id="save-name" required placeholder="Your Name" style="width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; font-size: 1rem; transition: border-color 0.2s; outline: none;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: 700; margin-bottom: 8px; color: var(--npt-gray); font-family: 'Montserrat', sans-serif; font-size: 0.9rem;">Email</label>
+                    <input type="email" id="save-email" required placeholder="you@example.com" style="width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; font-size: 1rem; transition: border-color 0.2s; outline: none;">
+                </div>
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; font-weight: 700; margin-bottom: 8px; color: var(--npt-gray); font-family: 'Montserrat', sans-serif; font-size: 0.9rem;">Phone (Optional)</label>
+                    <input type="tel" id="save-phone" placeholder="(555) 123-4567" style="width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; font-size: 1rem; transition: border-color 0.2s; outline: none;">
+                </div>
+                <button type="submit" style="
+                    width: 100%; 
+                    padding: 14px; 
+                    background: var(--npt-blue); 
+                    color: white; 
+                    border: none; 
+                    border-radius: 8px; 
+                    font-weight: 700; 
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 1.05rem;
+                    cursor: pointer;
+                    transition: background 0.2s, transform 0.1s;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <i class="fa-regular fa-paper-plane"></i> Save & Notify Me
+                </button>
+            </form>
+        </div>
+    </div>
+
     <footer class="footer-container">
         <p>&copy; 2024 NPTech & Community Fiber. All rights reserved.</p>
     </footer>
 
     <!-- Changed to module for Firebase support -->
     <script type="module" src="pricing.js"></script>
+    
+    <!-- Inline styles for form focus (since we can't edit CSS directly easily) -->
+    <style>
+        input:focus { border-color: var(--npt-lt-blue) !important; }
+        #close-save-modal:hover { color: var(--npt-black) !important; }
+        button[type="submit"]:hover { background-color: #045293 !important; transform: translateY(-1px); }
+    </style>
 </body>
 </html>
