@@ -168,7 +168,7 @@ function updateOrderSummary() {
     // 1. Build Plan Card
     const isPopular = (typeof plan.isPopular !== 'undefined') ? plan.isPopular : false;
     const popularClass = isPopular ? 'popular' : '';
-    const popularBadge = isPopular ? '<div class="popular-badge">Most Popular</div>' : '';
+    const popularBadge = isPopular ? '<div class="popular-badge">Best Value</div>' : '';
 
     const hasPromo = !!plan.promoPrice;
     let priceHtml = hasPromo ? 
@@ -216,8 +216,8 @@ function updateOrderSummary() {
 
     // Install Fee Logic
     const installFeeDisplay = isFreeInstall ? 
-        `<div class="fee-price"><span class="crossed-text">$50 - $150</span> <span class="free-text">0.00 on us!</span></div>` : 
-        `<div class="fee-price">$50 - $150*</div>`;
+        `<div class="fee-price"><span class="crossed-text">$50 - $150</span> <span class="free-text">0.00, on us!</span></div>` : 
+        `<div class="fee-price">$25 - $150*</div>`;
     
     html += `
         <div class="fee-row-item">
@@ -228,13 +228,13 @@ function updateOrderSummary() {
                 </div>
                 ${installFeeDisplay}
             </div>
-            <div class="fee-note">*Distance house is from the road will determine install price.</div>
+            <div class="fee-note">*Distance from road determines installation cost. If fiber is already run to home, installation fee is waived and the activation fee of $25 applies instead.</div>
         </div>
     `;
 
     // Router Fee Logic
     const routerFeeDisplay = isFreeRouter ? 
-        `<div class="fee-price"><span class="crossed-text">$99.00</span> <span class="free-text">0.00 on us!</span></div>` : 
+        `<div class="fee-price"><span class="crossed-text">$99.00</span> <span class="free-text">0.00, on us!</span></div>` : 
         `<div class="fee-price">$99.00</div>`;
 
     html += `
@@ -242,7 +242,7 @@ function updateOrderSummary() {
             <div class="fee-line">
                 <div class="fee-item-header">
                     <div class="fee-icon"><img src="logos/Eero_(1).png" alt="Eero"></div>
-                    <span>Eero 6+ Mesh Unit</span>
+                    <span>Eero 6+ Mesh Unit & Fiber Modem</span>
                 </div>
                 ${routerFeeDisplay}
             </div>

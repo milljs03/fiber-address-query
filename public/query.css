@@ -51,6 +51,10 @@ body, html {
     width: 100%;
 }
 
+.highlight-green {
+    color: var(--cfn-green);
+}
+
 .logo-container {
     width: 100%;
     max-width: 100%; 

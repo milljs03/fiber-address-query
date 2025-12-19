@@ -25,9 +25,9 @@ signInAnonymously(auth).catch((error) => {
 
 // Hard fallback
 const FALLBACK_PLANS = {
-    "Standard": { price: "$65", speed: "200 Mbps" },
-    "Advanced": { price: "$80", speed: "500 Mbps" },
-    "Premium": { price: "$89", speed: "1 Gbps", isPopular: true, stickers: "Free Install, WiFi 6 Included" }
+    "Standard": { price: "$65", speed: "200 Mbps", description: "Good for small households" },
+    "Advanced": { price: "$80", speed: "500 Mbps", description: "Best for gaming & 4K streaming" },
+    "Premium": { price: "$89", speed: "1 Gbps", isPopular: true, stickers: "Free Install, WiFi 6 Included", description: "Maximum speed for smart homes" }
 };
 
 // --- STICKER CSS INJECTION ---
@@ -220,7 +220,7 @@ function renderPlans(plans, address, campaignId, campaignName) {
         const isPopular = (typeof plan.isPopular !== 'undefined') ? plan.isPopular : (index === planArray.length - 1);
         
         const popularClass = isPopular ? 'popular' : '';
-        const popularBadge = isPopular ? '<div class="popular-badge">Most Popular</div>' : '';
+        const popularBadge = isPopular ? '<div class="popular-badge">Best Value</div>' : '';
 
         const hasPromo = !!plan.promoPrice;
         let priceHtml = '';
@@ -278,6 +278,11 @@ function renderPlans(plans, address, campaignId, campaignName) {
             }
         }
 
+        // UPDATED: Description HTML without inline styles
+        const descriptionHtml = plan.description 
+            ? `<div class="plan-description">${plan.description}</div>` 
+            : '';
+
         const cardHtml = `
             <div class="pricing-box ${popularClass}" data-plan="${key}">
                 ${popularBadge}
@@ -293,6 +298,10 @@ function renderPlans(plans, address, campaignId, campaignName) {
 
                     <div class="speed-features">${plan.speed}</div>
                     <div class="speed-capability">Download & Upload</div>
+
+                    <!-- Description -->
+                    ${descriptionHtml}
+
                     <div class="core-benefits">
                         <span class="highlight-text">Local Service</span>
                         <span class="highlight-text">No Contracts</span>               

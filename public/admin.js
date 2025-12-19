@@ -192,7 +192,18 @@ function openCampaignModal(campaignId = null) {
             
             if (data.plans) {
                 Object.entries(data.plans).forEach(([name, details]) => {
-                    addPlanRow(name, details.price, details.speed, details.isPopular, details.promoPrice, details.promoLabel, details.promoEnd, details.stickers);
+                    // Added description argument to the end
+                    addPlanRow(
+                        name, 
+                        details.price, 
+                        details.speed, 
+                        details.isPopular, 
+                        details.promoPrice, 
+                        details.promoLabel, 
+                        details.promoEnd, 
+                        details.stickers,
+                        details.description
+                    );
                 });
             } else {
                 addPlanRow();
@@ -238,7 +249,7 @@ window.togglePromo = function(btn) {
     }
 };
 
-function addPlanRow(name='', price='', speed='', isPopular=false, promoPrice='', promoLabel='', promoEnd='', stickers='') {
+function addPlanRow(name='', price='', speed='', isPopular=false, promoPrice='', promoLabel='', promoEnd='', stickers='', description='') {
     const container = document.getElementById('plans-container');
     const div = document.createElement('div');
     div.className = 'plan-row-card';
@@ -266,6 +277,14 @@ function addPlanRow(name='', price='', speed='', isPopular=false, promoPrice='',
                 <button type="button" class="tool-btn" onclick="window.moveRowUp(this)" title="Move Up"><i class="fa-solid fa-arrow-up"></i></button>
                 <button type="button" class="tool-btn" onclick="window.moveRowDown(this)" title="Move Down"><i class="fa-solid fa-arrow-down"></i></button>
                 <button type="button" class="tool-btn remove" onclick="this.closest('.plan-row-card').remove()" title="Delete"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>
+
+        <!-- NEW: Description Field -->
+        <div class="form-row">
+            <div class="form-col" style="flex:1;">
+                 <label>Best For / Description</label>
+                 <input type="text" class="plan-description" placeholder="e.g. Great for streaming & smart homes" value="${description}">
             </div>
         </div>
 
@@ -325,6 +344,10 @@ async function handleCampaignSave(e) {
         const planPrice = row.querySelector('.plan-price').value.trim();
         const planSpeed = row.querySelector('.plan-speed').value.trim();
         const stickers = row.querySelector('.plan-stickers').value.trim();
+        
+        // NEW: Grab description
+        const description = row.querySelector('.plan-description').value.trim();
+        
         const isPopular = row.querySelector('.plan-popular').checked;
         
         const promoContainer = row.querySelector('.promo-container');
@@ -340,7 +363,14 @@ async function handleCampaignSave(e) {
         }
         
         if(planName && planPrice && planSpeed) {
-            plans[planName] = { price: planPrice, speed: planSpeed, isPopular, stickers, ...promoData };
+            plans[planName] = { 
+                price: planPrice, 
+                speed: planSpeed, 
+                description: description, // Saved to DB
+                isPopular, 
+                stickers, 
+                ...promoData 
+            };
         }
     });
 
@@ -470,7 +500,18 @@ window.duplicateCampaign = function(id) {
     container.innerHTML = '';
     if (campaign.plans) {
         Object.entries(campaign.plans).forEach(([name, details]) => {
-            addPlanRow(name, details.price, details.speed, details.isPopular, details.promoPrice, details.promoLabel, details.promoEnd, details.stickers);
+            // Include description in copy
+            addPlanRow(
+                name, 
+                details.price, 
+                details.speed, 
+                details.isPopular, 
+                details.promoPrice, 
+                details.promoLabel, 
+                details.promoEnd, 
+                details.stickers,
+                details.description
+            );
         });
     }
 };
