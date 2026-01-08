@@ -1,55 +1,63 @@
 rules_version = '2';
 service cloud.firestore {
-  match /databases/{database}/documents {
+match /databases/{database}/documents {
 
-    // Helper function to check for specific admin email (Matches your request for jmiller only)
-    function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'jmiller@nptel.com';
-    }
+// Helper function to check for specific admin email (Matches your request for jmiller only)
+function isAdmin() {
+  return request.auth != null && request.auth.token.email == 'jmiller@nptel.com';
+}
 
-    // Helper to check if user is authenticated staff
-    function isStaff() {
-      return request.auth != null 
-             && request.auth.token.email != null
-             && request.auth.token.email.matches('.*@nptel[.]com');
-    }
+// Helper to check if user is authenticated staff
+function isStaff() {
+  return request.auth != null 
+         && request.auth.token.email != null
+         && request.auth.token.email.matches('.*@nptel[.]com');
+}
 
-    // 1. Polygon Data (Public Read, Admin Write)
-    match /artifacts/{appId}/public/data/polygons/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
+// 1. Polygon Data (Public Read, Admin Write)
+match /artifacts/{appId}/public/data/polygons/{docId} {
+  allow read: if true;
+  allow write: if isAdmin();
+}
 
-    // 2. Service Requests (Public Create, Any Staff Read)
-    match /artifacts/{appId}/public/data/service_requests/{docId} {
-      // Require valid authentication (even anonymous) to prevent unauthenticated spam
-      allow create: if request.auth != null;
-      
-      // Allow read for ANY authenticated user with an @nptel.com email
-      allow read: if isStaff();
-    }
+// 2. Service Requests (Public Create, Any Staff Read)
+match /artifacts/{appId}/public/data/service_requests/{docId} {
+  // Require valid authentication (even anonymous) to prevent unauthenticated spam
+  allow create: if request.auth != null;
+  
+  // Allow read for ANY authenticated user with an @nptel.com email
+  allow read: if isStaff();
+}
 
-    // 3. Orders (NO PUBLIC WRITE - Function Only, Any Staff Read, Admin Update/Delete)
-    match /artifacts/{appId}/public/data/orders/{docId} {
-      // SECURITY FIX: Deny client-side creation. 
-      // The Cloud Function uses Admin SDK which bypasses this rule, 
-      // ensuring all orders MUST go through the secure function.
-      allow create: if false; 
-      
-      allow read: if isStaff();
-      allow update, delete: if isAdmin();
-    }
+// 3. Orders (NO PUBLIC WRITE - Function Only, Any Staff Read, Admin Update/Delete)
+match /artifacts/{appId}/public/data/orders/{docId} {
+  // SECURITY FIX: Deny client-side creation. 
+  // The Cloud Function uses Admin SDK which bypasses this rule, 
+  // ensuring all orders MUST go through the secure function.
+  allow create: if false; 
+  
+  allow read: if isStaff();
+  allow update, delete: if isAdmin();
+}
 
-    // 4. Campaigns (Public Read, Admin Write)
-    match /artifacts/{appId}/public/data/campaigns/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
+// 4. Campaigns (Public Read, Admin Write)
+match /artifacts/{appId}/public/data/campaigns/{docId} {
+  allow read: if true;
+  allow write: if isAdmin();
+}
 
-    // 5. Front Office Signups
-    match /artifacts/{appId}/public/data/office_signups/{docId} {
-      allow create: if request.auth != null;
-      allow read, update, delete: if isStaff();
-    }
-  }
+// 5. Front Office Signups
+match /artifacts/{appId}/public/data/office_signups/{docId} {
+  allow create: if request.auth != null;
+  allow read, update, delete: if isStaff();
+}
+
+// 6. Referrals (Admin Write, Staff Read)
+match /artifacts/{appId}/public/data/referrals/{docId} {
+  allow read: if isStaff();
+  allow write: if isAdmin();
+}
+
+
+}
 }

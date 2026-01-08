@@ -29,7 +29,7 @@ let globalDefaultCampaign = null;
 let editingCampaignId = null;     
 let isUserAdmin = false;
 let searchMarker;
-let mapOverlay; // Helper for coordinate translation
+let mapOverlay; 
 
 // Heatmap State
 let heatmapMarkers = [];
@@ -45,6 +45,7 @@ let cachedData = {
     leads: [],
     activity: []
 };
+let allReferrals = []; 
 let currentView = 'orders';
 
 // DOM Elements
@@ -61,12 +62,11 @@ const btnCreateCampaign = document.getElementById('btn-create-campaign');
 const btnCloseModal = document.getElementById('btn-close-modal');
 const btnCancelModal = document.getElementById('btn-cancel-modal');
 
-// --- HELPER: DEDUPLICATE BY ADDRESS ---
+// --- HELPER FUNCTIONS (DEFINED EARLY) ---
 function getUniqueByAddress(items, addressKey = 'address', dateKey = null) {
     const seen = new Set();
     const unique = [];
     
-    // 1. Sort descending by date (Newest first) so we keep the latest entry
     if (dateKey) {
         items.sort((a, b) => {
             const dateA = a[dateKey] && a[dateKey].toDate ? a[dateKey].toDate() : (a[dateKey] ? new Date(a[dateKey]) : new Date(0));
@@ -75,7 +75,6 @@ function getUniqueByAddress(items, addressKey = 'address', dateKey = null) {
         });
     }
 
-    // 2. Filter duplicates
     for (const item of items) {
         const addr = item[addressKey] ? item[addressKey].toString().trim().toLowerCase() : null;
         if (addr) {
@@ -90,153 +89,18 @@ function getUniqueByAddress(items, addressKey = 'address', dateKey = null) {
     return unique;
 }
 
-// --- AUTH LOGIC ---
-const initAuth = async () => {
-    try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            await signInWithCustomToken(auth, __initial_auth_token);
-        }
-    } catch (e) { console.warn("Auth check failed:", e); }
-};
-initAuth();
-
-loginBtn.addEventListener('click', () => {
-    signInWithPopup(auth, provider).catch((error) => {
-        authMessage.textContent = "Error: " + error.message;
-    });
-});
-
-logoutBtn.addEventListener('click', () => {
-    signOut(auth).then(() => { window.location.reload(); });
-});
-
-onAuthStateChanged(auth, (user) => {
-    if (user && user.email) {
-        if (!user.email.endsWith('@nptel.com')) {
-            signOut(auth);
-            authMessage.textContent = "Access Denied: @nptel.com email required.";
-            return;
-        }
-
-        loginScreen.style.display = 'none';
-        appContainer.style.display = 'flex'; 
-        userDisplay.textContent = user.email;
-
-        const email = user.email.toLowerCase();
-        isUserAdmin = (email === 'jmiller@nptel.com' || email === 'ppenrose@nptel.com');
-        
-        initTabs();
-        loadAnalyticsData(); 
-        
-        // Export Listener (Dynamic)
-        document.getElementById('export-current-btn').addEventListener('click', () => {
-            if(currentView === 'orders') exportOrdersToCSV();
-            else if(currentView === 'leads') exportLeadsToCSV();
-            else if(currentView === 'activity') exportActivityToCSV();
-        });
-
-        document.getElementById('campaign-form').addEventListener('submit', handleCampaignSave);
-        document.getElementById('add-plan-btn').addEventListener('click', () => addPlanRow());
-        
-        // Modal Listeners
-        if(btnCreateCampaign) btnCreateCampaign.addEventListener('click', () => openCampaignModal());
-        if(btnCloseModal) btnCloseModal.addEventListener('click', closeCampaignModal);
-        if(btnCancelModal) btnCancelModal.addEventListener('click', closeCampaignModal);
-        
-        loadCampaigns(); 
-
-        if (window.mapLogicReadyCallback) window.mapLogicReadyCallback(isUserAdmin);
-        else window.currentUserIsAdmin = isUserAdmin;
-
-    } else {
-        loginScreen.style.display = 'flex';
-        appContainer.style.display = 'none';
-    }
-});
-
-// --- MODAL LOGIC ---
-function openCampaignModal(campaignId = null) {
-    editingCampaignId = campaignId;
-    const modalTitle = document.getElementById('modal-title');
-    const plansContainer = document.getElementById('plans-container');
-    const form = document.getElementById('campaign-form');
-    
-    // Clear previous state
-    form.reset();
-    plansContainer.innerHTML = '';
-    document.getElementById('camp-expires').value = ''; 
-    
-    if (campaignId) {
-        // Edit Mode
-        let data;
-        if(campaignId === 'global_default') {
-            data = globalDefaultCampaign;
-            modalTitle.textContent = "Edit Global Defaults";
-        } else {
-            data = campaigns.find(c => c.id === campaignId);
-            modalTitle.textContent = "Edit Campaign";
-        }
-        
-        if(data) {
-            document.getElementById('camp-name').value = data.name || '';
-            document.getElementById('camp-color').value = data.color || '#ff0000';
-            document.getElementById('is-default-pricing').checked = (campaignId === 'global_default');
-            
-            if (data.expiresAt) {
-                const d = data.expiresAt.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt);
-                if (!isNaN(d.getTime())) {
-                   const dateStr = d.toISOString().split('T')[0];
-                   document.getElementById('camp-expires').value = dateStr;
-                }
-            }
-            
-            if (data.plans) {
-                Object.entries(data.plans).forEach(([name, details]) => {
-                    // Added description argument to the end
-                    addPlanRow(
-                        name, 
-                        details.price, 
-                        details.speed, 
-                        details.isPopular, 
-                        details.promoPrice, 
-                        details.promoLabel, 
-                        details.promoEnd, 
-                        details.stickers,
-                        details.description
-                    );
-                });
-            } else {
-                addPlanRow();
-            }
-        }
-    } else {
-        // Create Mode
-        modalTitle.textContent = "New Campaign";
-        editingCampaignId = null;
-        document.getElementById('camp-color').value = '#0066ff'; 
-        addPlanRow();
-    }
-    
-    modalOverlay.classList.add('open');
-}
-
-function closeCampaignModal() {
-    modalOverlay.classList.remove('open');
-}
-
-// --- CAMPAIGN LOGIC ---
-
-window.moveRowUp = function(btn) {
+// Plan Editor Helpers (Must be accessible via window for HTML onclick)
+function moveRowUp(btn) {
     const row = btn.closest('.plan-row-card');
     if (row.previousElementSibling) row.parentNode.insertBefore(row, row.previousElementSibling);
-};
+}
 
-window.moveRowDown = function(btn) {
+function moveRowDown(btn) {
     const row = btn.closest('.plan-row-card');
     if (row.nextElementSibling) row.parentNode.insertBefore(row.nextElementSibling, row);
-};
+}
 
-window.togglePromo = function(btn) {
+function togglePromo(btn) {
     const container = btn.closest('.plan-row-card').querySelector('.promo-container');
     if (container.classList.contains('active')) {
         container.classList.remove('active');
@@ -247,10 +111,424 @@ window.togglePromo = function(btn) {
         btn.textContent = "- Remove Promo";
         btn.style.color = "#d4380d";
     }
+}
+
+// --- AUTH LOGIC ---
+const initAuth = async () => {
+    try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+        }
+    } catch (e) { console.warn("Auth check failed:", e); }
 };
+initAuth();
+
+if(loginBtn) {
+    loginBtn.addEventListener('click', () => {
+        signInWithPopup(auth, provider).catch((error) => {
+            if(authMessage) authMessage.textContent = "Error: " + error.message;
+        });
+    });
+}
+
+if(logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+        signOut(auth).then(() => { window.location.reload(); });
+    });
+}
+
+onAuthStateChanged(auth, (user) => {
+    if (user && user.email) {
+        if (!user.email.endsWith('@nptel.com')) {
+            signOut(auth);
+            if(authMessage) authMessage.textContent = "Access Denied: @nptel.com email required.";
+            return;
+        }
+
+        if(loginScreen) loginScreen.style.display = 'none';
+        if(appContainer) appContainer.style.display = 'flex'; 
+        if(userDisplay) userDisplay.textContent = user.email;
+
+        const email = user.email.toLowerCase();
+        isUserAdmin = (email === 'jmiller@nptel.com' || email === 'ppenrose@nptel.com');
+        window.currentUserIsAdmin = isUserAdmin; // EXPOSE TO MAP LOGIC
+        
+        // Initialize UI
+        initTabs();
+        loadAnalyticsData(); 
+        loadCampaigns();
+        
+        // Ensure this function is defined before calling
+        if (typeof loadReferrals === 'function') {
+            loadReferrals();
+        } else {
+            console.warn("loadReferrals not defined yet, retrying shortly...");
+            setTimeout(() => { if(typeof loadReferrals === 'function') loadReferrals(); }, 500);
+        }
+        
+        setupReferralListeners();
+
+        // Initialize Map (if API is ready)
+        if (window.isGoogleMapsReady) {
+            loadMapFeatures();
+        }
+
+        // Export Listener (Dynamic)
+        const exportCurrentBtn = document.getElementById('export-current-btn');
+        if(exportCurrentBtn) {
+            exportCurrentBtn.addEventListener('click', () => {
+                if(currentView === 'orders') exportOrdersToCSV();
+                else if(currentView === 'leads') exportLeadsToCSV();
+                else if(currentView === 'activity') exportActivityToCSV();
+            });
+        }
+        
+        // Setup Campaign Modal
+        if(btnCreateCampaign) btnCreateCampaign.addEventListener('click', () => openCampaignModal());
+        if(btnCloseModal) btnCloseModal.addEventListener('click', closeCampaignModal);
+        if(btnCancelModal) btnCancelModal.addEventListener('click', closeCampaignModal);
+        
+        const campForm = document.getElementById('campaign-form');
+        if(campForm) campForm.addEventListener('submit', handleCampaignSave);
+        
+        const addPlanBtn = document.getElementById('add-plan-btn');
+        if(addPlanBtn) {
+            addPlanBtn.addEventListener('click', () => addPlanRow());
+        }
+
+    } else {
+        if(loginScreen) loginScreen.style.display = 'flex';
+        if(appContainer) appContainer.style.display = 'none';
+    }
+});
+
+// --- REFERRAL PROGRAM LOGIC ---
+
+function setupReferralListeners() {
+    const processBtn = document.getElementById('process-referral-btn');
+    if (processBtn) processBtn.addEventListener('click', handleReferralUpload);
+    
+    const searchInput = document.getElementById('referral-search');
+    if (searchInput) searchInput.addEventListener('keyup', handleReferralSearch);
+    
+    const exportBtn = document.getElementById('export-referral-btn');
+    if (exportBtn) exportBtn.addEventListener('click', exportReferralCsv);
+
+    const refreshBtn = document.getElementById('refresh-referral-btn');
+    if (refreshBtn) refreshBtn.addEventListener('click', loadReferrals);
+
+    const massDeleteBtn = document.getElementById('mass-delete-referral-btn');
+    if (massDeleteBtn) massDeleteBtn.addEventListener('click', handleMassDelete);
+}
+
+async function handleReferralUpload() {
+    const input = document.getElementById('referral-csv-input');
+    const statusDiv = document.getElementById('referral-status');
+    const file = input.files[0];
+
+    if (!file) {
+        statusDiv.innerText = "Please select a CSV file first.";
+        statusDiv.style.color = "red";
+        return;
+    }
+
+    statusDiv.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+    statusDiv.style.color = "#333";
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const text = e.target.result;
+        try {
+            const parsedData = parseCSV(text);
+            if (parsedData.length === 0) {
+                throw new Error("No valid data found in CSV. Headers must include Name, Address, Account.");
+            }
+
+            // Save to Firestore
+            await saveReferralsToDb(parsedData);
+            
+            statusDiv.innerText = `Success! Processed ${parsedData.length} records.`;
+            statusDiv.style.color = "green";
+            input.value = ''; // Reset
+            loadReferrals(); // Refresh table
+            
+        } catch (err) {
+            console.error(err);
+            statusDiv.innerText = "Error: " + err.message;
+            statusDiv.style.color = "red";
+        }
+    };
+    reader.readAsText(file);
+}
+
+function parseCSV(text) {
+    const lines = text.split('\n');
+    if (lines.length < 2) return [];
+
+    // Simple header normalization
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim().replace(/"/g, ''));
+    
+    const nameIdx = headers.findIndex(h => h.includes('name'));
+    const addrIdx = headers.findIndex(h => h.includes('address'));
+    const accIdx = headers.findIndex(h => h.includes('account'));
+
+    if (nameIdx === -1 || addrIdx === -1 || accIdx === -1) {
+        throw new Error("Missing required columns: Name, Address, or Account");
+    }
+
+    const results = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        // Handle quotes loosely
+        const row = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+        let colValues = row;
+        if (!colValues) colValues = line.split(',');
+
+        if (colValues && colValues.length >= 3) {
+            const clean = (val) => val ? val.replace(/^"|"$/g, '').trim() : '';
+            
+            const name = clean(colValues[nameIdx]);
+            const address = clean(colValues[addrIdx]);
+            const account = clean(colValues[accIdx]);
+
+            if (account && name) {
+                results.push({
+                    name,
+                    address,
+                    account,
+                    referralCode: generateReferralCode(name, address)
+                });
+            }
+        }
+    }
+    return results;
+}
+
+function generateReferralCode(name, address) {
+    // 1. Get First Name (First word of the name column)
+    const nameParts = name.trim().split(/\s+/);
+    let firstName = nameParts[0] || "REF";
+    
+    // Cleanup: Remove non-alpha
+    firstName = firstName.replace(/[^a-zA-Z]/g, '');
+    if (!firstName) firstName = "REF"; 
+    
+    // Capitalize first letter
+    firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+
+    // 2. Get House Number
+    const houseNumMatch = address.trim().match(/^\d+/);
+    const houseNum = houseNumMatch ? houseNumMatch[0] : '00';
+
+    return `${firstName}${houseNum}`;
+}
+
+async function saveReferralsToDb(data) {
+    const ref = collection(db, 'artifacts', appId, 'public', 'data', 'referrals');
+    
+    // Use Account Number as Doc ID
+    const promises = data.map(item => {
+        return setDoc(doc(ref, item.account), {
+            ...item,
+            updatedAt: new Date()
+        });
+    });
+
+    await Promise.all(promises);
+}
+
+async function handleMassDelete() {
+    if (!auth.currentUser) return;
+    
+    if (!confirm("Are you sure you want to delete ALL referral entries? This cannot be undone.")) {
+        return;
+    }
+
+    const tbody = document.querySelector('#referral-table tbody');
+    if(tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Deleting all records... <i class="fa-solid fa-spinner fa-spin"></i></td></tr>';
+
+    try {
+        const ref = collection(db, 'artifacts', appId, 'public', 'data', 'referrals');
+        const snapshot = await getDocs(ref);
+        
+        // Firestore doesn't support mass delete of collection, must delete documents individually
+        // Batched writes are limited to 500 operations. For simplicity/robustness here we use Promise.all
+        // For very large datasets (>500), consider batching in chunks.
+        
+        const deletePromises = snapshot.docs.map(docSnap => deleteDoc(docSnap.ref));
+        await Promise.all(deletePromises);
+        
+        alert("All referral entries have been deleted.");
+        loadReferrals();
+        
+    } catch (e) {
+        console.error("Error mass deleting:", e);
+        alert("Failed to delete all entries: " + e.message);
+        loadReferrals(); // Reload to show what remains
+    }
+}
+
+async function loadReferrals() {
+    if (!auth.currentUser) return;
+
+    const tbody = document.querySelector('#referral-table tbody');
+    if (!tbody) return;
+    
+    try {
+        const ref = collection(db, 'artifacts', appId, 'public', 'data', 'referrals');
+        const snap = await getDocs(ref);
+        
+        allReferrals = snap.docs.map(d => d.data());
+        
+        // Sort by name
+        allReferrals.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        
+        renderReferralTable(allReferrals);
+    } catch (e) {
+        console.error("Error loading referrals", e);
+        // If permission error, show simpler message
+        if (e.code === 'permission-denied') {
+            tbody.innerHTML = '<tr><td colspan="5" style="color:orange">Referral access restricted (Permission Denied).</td></tr>';
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" style="color:red">Error loading data.</td></tr>';
+        }
+    }
+}
+
+function renderReferralTable(data) {
+    const tbody = document.querySelector('#referral-table tbody');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#777;">No records found. Upload a list to get started.</td></tr>';
+        return;
+    }
+
+    // Increase limit for view or implement pagination later
+    const displayData = data.slice(0, 500); 
+
+    displayData.forEach(item => {
+        const dateStr = item.updatedAt && item.updatedAt.seconds ? new Date(item.updatedAt.seconds * 1000).toLocaleDateString() : '-';
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-weight:600;">${item.name}</td>
+            <td style="color:#555;">${item.address}</td>
+            <td style="font-family:monospace; color:#444;">${item.account}</td>
+            <td><span class="code-badge">${item.referralCode}</span></td>
+            <td style="color:#777; font-size:0.85rem;">${dateStr}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function handleReferralSearch(e) {
+    const term = e.target.value.toLowerCase();
+    
+    if (!term) {
+        renderReferralTable(allReferrals);
+        return;
+    }
+
+    const filtered = allReferrals.filter(item => 
+        (item.name && item.name.toLowerCase().includes(term)) ||
+        (item.address && item.address.toLowerCase().includes(term)) ||
+        (item.referralCode && item.referralCode.toLowerCase().includes(term)) ||
+        (item.account && item.account.toString().toLowerCase().includes(term))
+    );
+    
+    renderReferralTable(filtered);
+}
+
+function exportReferralCsv() {
+    if (allReferrals.length === 0) {
+        alert("No data to export.");
+        return;
+    }
+
+    let csvContent = "Name,Address,Account,Referral Code\n";
+
+    allReferrals.forEach(row => {
+        const rowStr = `"${row.name||''}","${row.address||''}","${row.account||''}","${row.referralCode||''}"`;
+        csvContent += rowStr + "\n";
+    });
+
+    downloadCSV(csvContent, "referral_codes.csv");
+}
+
+function openCampaignModal(campaignId) {
+    editingCampaignId = campaignId || null;
+    
+    // Reset Form
+    document.getElementById('camp-name').value = '';
+    document.getElementById('camp-color').value = '#ff0000';
+    document.getElementById('camp-expires').value = '';
+    document.getElementById('is-default-pricing').checked = false;
+    document.getElementById('plans-container').innerHTML = '';
+
+    let campaign = null;
+    if (campaignId === 'global_default') {
+        campaign = globalDefaultCampaign;
+        document.getElementById('modal-title').textContent = "Edit Global Default Pricing";
+        document.getElementById('is-default-pricing').checked = true;
+    } else if (campaignId) {
+        campaign = campaigns.find(c => c.id === campaignId);
+        document.getElementById('modal-title').textContent = "Edit Campaign";
+    } else {
+        document.getElementById('modal-title').textContent = "New Campaign";
+    }
+
+    if (campaign) {
+        document.getElementById('camp-name').value = campaign.name || '';
+        document.getElementById('camp-color').value = campaign.color || '#ff0000';
+        
+        if (campaign.expiresAt) {
+            const d = campaign.expiresAt.toDate ? campaign.expiresAt.toDate() : new Date(campaign.expiresAt);
+            if (!isNaN(d.getTime())) {
+                document.getElementById('camp-expires').value = d.toISOString().split('T')[0];
+            }
+        }
+
+        if (campaign.plans) {
+            Object.entries(campaign.plans).forEach(([name, details]) => {
+                addPlanRow(
+                    name, 
+                    details.price, 
+                    details.speed, 
+                    details.isPopular, 
+                    details.promoPrice, 
+                    details.promoLabel, 
+                    details.promoEnd, 
+                    details.stickers,
+                    details.description
+                );
+            });
+        }
+    } else {
+        addPlanRow();
+    }
+
+    if(modalOverlay) {
+        modalOverlay.classList.add('open');
+        modalOverlay.style.display = 'flex';
+    }
+}
+
+function closeCampaignModal() {
+    if(modalOverlay) {
+        modalOverlay.classList.remove('open');
+        modalOverlay.style.display = 'none';
+    }
+}
 
 function addPlanRow(name='', price='', speed='', isPopular=false, promoPrice='', promoLabel='', promoEnd='', stickers='', description='') {
     const container = document.getElementById('plans-container');
+    if(!container) return;
+
     const div = document.createElement('div');
     div.className = 'plan-row-card';
     
@@ -280,7 +558,6 @@ function addPlanRow(name='', price='', speed='', isPopular=false, promoPrice='',
             </div>
         </div>
 
-        <!-- NEW: Description Field -->
         <div class="form-row">
             <div class="form-col" style="flex:1;">
                  <label>Best For / Description</label>
@@ -345,7 +622,6 @@ async function handleCampaignSave(e) {
         const planSpeed = row.querySelector('.plan-speed').value.trim();
         const stickers = row.querySelector('.plan-stickers').value.trim();
         
-        // NEW: Grab description
         const description = row.querySelector('.plan-description').value.trim();
         
         const isPopular = row.querySelector('.plan-popular').checked;
@@ -366,7 +642,7 @@ async function handleCampaignSave(e) {
             plans[planName] = { 
                 price: planPrice, 
                 speed: planSpeed, 
-                description: description, // Saved to DB
+                description: description,
                 isPopular, 
                 stickers, 
                 ...promoData 
@@ -400,10 +676,13 @@ async function loadCampaigns() {
         (snapshot) => {
             campaigns = [];
             const container = document.getElementById('campaigns-grid');
+            if(!container) return;
             container.innerHTML = '';
             
             const select = document.getElementById('campaign-select');
-            while (select.options.length > 1) { select.remove(1); }
+            if(select) {
+                while (select.options.length > 1) { select.remove(1); }
+            }
 
             snapshot.forEach(doc => {
                 const data = doc.data();
@@ -415,13 +694,15 @@ async function loadCampaigns() {
                 } else {
                     campaigns.push(data);
                     renderGridCard(data, container, false);
-                    const opt = document.createElement('option');
-                    opt.value = data.id;
-                    opt.textContent = data.name;
-                    select.appendChild(opt);
+                    if(select) {
+                        const opt = document.createElement('option');
+                        opt.value = data.id;
+                        opt.textContent = data.name;
+                        select.appendChild(opt);
+                    }
                 }
             });
-            renderCampaignPalette(); // update draggable list
+            renderCampaignPalette(); 
             refreshMapColors();
         }, 
         (error) => console.error("Snapshot Error:", error)
@@ -480,42 +761,6 @@ function renderGridCard(data, container, isDefault) {
     container.appendChild(card);
 }
 
-// Global functions for inline HTML calls
-window.openCampaignModal = openCampaignModal;
-window.deleteCampaign = async function(id) {
-    if(!confirm("Delete this campaign?")) return;
-    try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', id)); } catch (e) { console.error(e); }
-};
-window.duplicateCampaign = function(id) {
-    let campaign;
-    if (id === 'global_default') campaign = globalDefaultCampaign;
-    else campaign = campaigns.find(c => c.id === id);
-    if (!campaign) return;
-    
-    openCampaignModal(); 
-    document.getElementById('camp-name').value = (campaign.name || 'Campaign') + " (Copy)";
-    document.getElementById('camp-color').value = campaign.color || '#ff0000';
-    
-    const container = document.getElementById('plans-container');
-    container.innerHTML = '';
-    if (campaign.plans) {
-        Object.entries(campaign.plans).forEach(([name, details]) => {
-            // Include description in copy
-            addPlanRow(
-                name, 
-                details.price, 
-                details.speed, 
-                details.isPopular, 
-                details.promoPrice, 
-                details.promoLabel, 
-                details.promoEnd, 
-                details.stickers,
-                details.description
-            );
-        });
-    }
-};
-
 function initTabs() { 
     const tabs=document.querySelectorAll('.tab-btn');
     tabs.forEach(tab=>{
@@ -524,42 +769,68 @@ function initTabs() {
             document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
             tab.classList.add('active');
             const contentId=tab.dataset.tab;
-            document.getElementById(contentId).classList.add('active');
+            const target = document.getElementById(contentId);
+            if(target) target.classList.add('active');
             if(contentId==='map-view'&&map)google.maps.event.trigger(map,"resize");
         });
     });
-    document.getElementById('refresh-data-btn').addEventListener('click',loadAnalyticsData);
+    const refreshBtn = document.getElementById('refresh-data-btn');
+    if(refreshBtn) {
+        refreshBtn.addEventListener('click',loadAnalyticsData);
+    }
 }
 
 // --- ANALYTICS & TABLE LOGIC ---
 
-window.switchTableView = function(viewName) {
+function switchTableView(viewName) {
     currentView = viewName;
+    console.log("Switching view to:", viewName);
     
     document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
     // Match button by index or logic. 
     const buttons = document.querySelectorAll('.view-btn');
-    if(viewName === 'orders') buttons[0].classList.add('active');
-    if(viewName === 'leads') buttons[1].classList.add('active');
-    if(viewName === 'activity') buttons[2].classList.add('active');
+    if(viewName === 'orders' && buttons[0]) buttons[0].classList.add('active');
+    if(viewName === 'leads' && buttons[1]) buttons[1].classList.add('active');
+    if(viewName === 'activity' && buttons[2]) buttons[2].classList.add('active');
 
     const titles = {
         'orders': 'Recent Orders',
         'leads': 'Captured Leads',
         'activity': 'Activity Log'
     };
-    document.getElementById('table-title').textContent = titles[viewName];
+    const titleEl = document.getElementById('table-title');
+    if(titleEl) titleEl.textContent = titles[viewName];
 
     renderMainTable();
 };
 
 function renderMainTable() {
+    console.log("Rendering table for:", currentView);
+    // Explicitly select inside the active context if possible, but IDs are unique.
+    // Ensure we are selecting safely.
     const tableHead = document.querySelector('#main-data-table thead');
     const tableBody = document.querySelector('#main-data-table tbody');
+    
+    if(!tableHead || !tableBody) {
+        // Fallback: If table exists but bodies don't (unlikely but robust)
+        const table = document.getElementById('main-data-table');
+        if (table) {
+            console.warn("Table bodies missing, recreating...");
+            table.innerHTML = '<thead></thead><tbody></tbody>';
+            // Recursively call once to retry with new elements
+            return renderMainTable();
+        } else {
+            console.error("Critical: #main-data-table not found in DOM.");
+            return;
+        }
+    }
+
     tableHead.innerHTML = '';
     tableBody.innerHTML = '';
 
     const data = cachedData[currentView] || [];
+    console.log(`Rendering ${data.length} rows for ${currentView}`);
+    
     const limit = 50; 
     const displayData = data.slice(0, limit);
 
@@ -588,7 +859,6 @@ function renderMainTable() {
             tableBody.appendChild(tr);
         });
     } else if (currentView === 'leads') {
-        // UPDATE: Enhanced Leads View with Badges
         tableHead.innerHTML = `
             <tr>
                 <th>Date</th>
@@ -602,7 +872,6 @@ function renderMainTable() {
             let dateObj = item.submittedAt || item.checkedAt;
             const dateStr = dateObj && dateObj.toDate ? dateObj.toDate().toLocaleDateString() : 'N/A';
             
-            // Logic to determine badge style
             let typeBadge = '';
             if (item.type === 'saved_quote') {
                 typeBadge = `<span style="background:#e3f2fd; color:#1565c0; padding:4px 8px; border-radius:4px; font-size:0.8em; font-weight:bold; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-cart-arrow-down"></i> Saved Cart</span>`;
@@ -654,48 +923,63 @@ function renderMainTable() {
 }
 
 async function loadAnalyticsData() {
-    if(!auth.currentUser) return;
-    try {
-        const refreshBtn = document.getElementById('refresh-data-btn');
-        if(refreshBtn) refreshBtn.classList.add('fa-spin');
+    if(!auth.currentUser) {
+        console.warn("loadAnalyticsData: No current user");
+        return;
+    }
+    const refreshBtn = document.getElementById('refresh-data-btn');
+    if(refreshBtn) refreshBtn.classList.add('fa-spin');
 
-        // 1. Fetch Orders
-        const ordersSnap = await getDocs(collection(db,'artifacts',appId,'public','data','orders'));
+    console.log("loadAnalyticsData: Fetching data...");
+
+    try {
+        const [ordersSnap, checksSnap] = await Promise.all([
+            getDocs(collection(db,'artifacts',appId,'public','data','orders')),
+            getDocs(collection(db,'artifacts',appId,'public','data','service_requests'))
+        ]);
+
+        console.log(`loadAnalyticsData: Fetched ${ordersSnap.size} orders and ${checksSnap.size} checks`);
+
         let rawOrders = [];
         ordersSnap.forEach(doc => { rawOrders.push({ id: doc.id, ...doc.data() }); });
         cachedData.orders = getUniqueByAddress(rawOrders, 'address', 'submittedAt');
 
-        // 2. Fetch Checks (Activity)
-        const checksSnap = await getDocs(collection(db,'artifacts',appId,'public','data','service_requests'));
         let rawChecks = [];
         checksSnap.forEach(doc => { rawChecks.push(doc.data()); });
         cachedData.activity = getUniqueByAddress(rawChecks, 'address', 'checkedAt');
 
-        // 3. Process Leads (Subset of Activity)
         let rawLeads = [];
         rawChecks.forEach(data => {
             if (data.type === 'manual_check' || (data.name && (data.phone || data.email))) {
-                // Ensure date exists for sorting
                 data.sortDate = data.submittedAt || data.checkedAt;
                 rawLeads.push(data);
             }
         });
         cachedData.leads = getUniqueByAddress(rawLeads, 'address', 'sortDate');
 
-        // 4. Update Stats UI
         updateStatsUI(cachedData.orders, cachedData.activity, cachedData.leads);
-
-        // 5. Render Table (Current View)
-        renderMainTable();
-
-        if(refreshBtn) refreshBtn.classList.remove('fa-spin');
+        
+        // Wait a tick to ensure DOM is ready if called immediately after auth
+        setTimeout(() => renderMainTable(), 100);
 
     } catch(e) { 
         console.error("Error loading analytics:", e); 
+        // Ensure headers load even if data fails
+        renderMainTable();
+        const tbody = document.querySelector('#main-data-table tbody');
+        if(tbody) {
+            tbody.innerHTML = `<tr><td colspan="5" style="color:red; text-align:center; padding: 20px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Error loading data: ${e.message}<br>
+                <small>Check console for details.</small>
+            </td></tr>`;
+        }
+    } finally {
+        if(refreshBtn) refreshBtn.classList.remove('fa-spin');
     }
 }
 
 function updateStatsUI(orders, activity, leads) {
+    console.log("Updating Stats UI");
     const planCounts = {};
     orders.forEach(data => {
         let pName = data.plan || 'Unknown';
@@ -715,70 +999,76 @@ function updateStatsUI(orders, activity, leads) {
 
     const conversionRate = available > 0 ? ((orders.length / available) * 100).toFixed(1) : 0;
 
-    document.getElementById('stat-total-val').textContent = orders.length;
-    document.getElementById('stat-serviceable-val').textContent = available;
-    document.getElementById('stat-conversion-val').textContent = conversionRate + '%';
-    if(document.getElementById('stat-queries-val')) {
-        document.getElementById('stat-queries-val').textContent = activity.length;
-    }
+    const totalVal = document.getElementById('stat-total-val');
+    if(totalVal) totalVal.textContent = orders.length;
+    
+    const servVal = document.getElementById('stat-serviceable-val');
+    if(servVal) servVal.textContent = available;
+    
+    const convVal = document.getElementById('stat-conversion-val');
+    if(convVal) convVal.textContent = conversionRate + '%';
+    
+    const queriesVal = document.getElementById('stat-queries-val');
+    if(queriesVal) queriesVal.textContent = activity.length;
 
     renderCharts(planCounts, { available, unavailable });
 }
 
 function renderCharts(planCounts, availabilityStats) {
-    const ctx1 = document.getElementById('planChart').getContext('2d');
-    if (planChartInstance) planChartInstance.destroy();
-
-    const planLabels = Object.keys(planCounts);
-    const planData = Object.values(planCounts);
-
-    planChartInstance = new Chart(ctx1, {
-        type: 'doughnut',
-        data: {
-            labels: planLabels,
-            datasets: [{
-                data: planData,
-                backgroundColor: ['#4facfe', '#43e97b', '#a18cd1', '#ff9a9e', '#fbc2eb'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'right' }
-            }
-        }
-    });
-
-    const ctx2 = document.getElementById('activityChart').getContext('2d');
-    if (activityChartInstance) activityChartInstance.destroy();
-
-    activityChartInstance = new Chart(ctx2, {
-        type: 'bar',
-        data: {
-            labels: ['Serviceable', 'Not Serviceable'],
-            datasets: [{
-                label: 'Addresses Checked',
-                data: [availabilityStats.available, availabilityStats.unavailable],
-                backgroundColor: ['#43e97b', '#ff6b6b'],
-                borderRadius: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true }
+    const ctx1 = document.getElementById('planChart');
+    if (ctx1) {
+        if (planChartInstance) planChartInstance.destroy();
+        const planLabels = Object.keys(planCounts);
+        const planData = Object.values(planCounts);
+        planChartInstance = new Chart(ctx1.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: planLabels,
+                datasets: [{
+                    data: planData,
+                    backgroundColor: ['#4facfe', '#43e97b', '#a18cd1', '#ff9a9e', '#fbc2eb'],
+                    borderWidth: 0
+                }]
             },
-            plugins: {
-                legend: { display: false }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' }
+                }
             }
-        }
-    });
+        });
+    }
+
+    const ctx2 = document.getElementById('activityChart');
+    if (ctx2) {
+        if (activityChartInstance) activityChartInstance.destroy();
+        activityChartInstance = new Chart(ctx2.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Serviceable', 'Not Serviceable'],
+                datasets: [{
+                    label: 'Addresses Checked',
+                    data: [availabilityStats.available, availabilityStats.unavailable],
+                    backgroundColor: ['#43e97b', '#ff6b6b'],
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
 }
 
-// Export Functions (Using Cached Data)
+// Export Functions
 async function exportOrdersToCSV() { 
     if(!cachedData.orders.length) { alert("No data to export."); return; }
     if(!confirm("Download Orders Report (Unique Addresses Only)?")) return; 
@@ -833,26 +1123,33 @@ function downloadCSV(content, filename) {
 }
 
 // Map Logic
-function initializeMapLogic() {window.mapLogicReadyCallback=(isAdmin)=>{isUserAdmin=isAdmin;loadMapFeatures();};if(typeof window.currentUserIsAdmin!=='undefined')window.mapLogicReadyCallback(window.currentUserIsAdmin);}
-if(window.isGoogleMapsReady)initializeMapLogic();else window.addEventListener('google-maps-ready',initializeMapLogic);
+function initializeMapLogic() {
+    window.mapLogicReadyCallback = (isAdmin) => {
+        isUserAdmin = isAdmin;
+        loadMapFeatures();
+    };
+    // If the window var was set by Auth first, use it.
+    if(typeof window.currentUserIsAdmin !== 'undefined') {
+        window.mapLogicReadyCallback(window.currentUserIsAdmin);
+    }
+}
+if(window.isGoogleMapsReady) initializeMapLogic();
+else window.addEventListener('google-maps-ready', initializeMapLogic);
 
 function loadMapFeatures() {
-    if(map)return;
+    if(map) return;
     initSearchControl();
     
     map=new google.maps.Map(document.getElementById('map'),{center:{lat:41.5006,lng:-85.8305},zoom:14,mapTypeId:'hybrid',disableDefaultUI:!isUserAdmin,zoomControl:true,});
     
-    // --- Initialize Helper Overlay for Coordinates ---
     class ProjectionHelper extends google.maps.OverlayView {
         onAdd(){} onRemove(){} draw(){}
     }
     mapOverlay = new ProjectionHelper();
     mapOverlay.setMap(map);
-    // -------------------------------------------------
 
     loadPolygonsFromDatabase();
     
-    // --- Listeners ---
     const heatmapBtn = document.getElementById('heatmap-btn');
     if(heatmapBtn) heatmapBtn.addEventListener('click', toggleHeatmap);
     
@@ -864,10 +1161,8 @@ function loadMapFeatures() {
         if(paletteBtn) paletteBtn.classList.remove('active');
     });
 
-    // --- Drop Zone Logic on Map ---
     const mapDiv = document.getElementById('map');
     
-    // Prevent default to allow dropping
     mapDiv.addEventListener('dragover', (e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'copy';
@@ -878,7 +1173,6 @@ function loadMapFeatures() {
         const campaignId = e.dataTransfer.getData('text/plain');
         if (!campaignId) return;
 
-        // Calculate LatLng from drop position
         const rect = mapDiv.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -887,9 +1181,7 @@ function loadMapFeatures() {
         
         const latLng = mapOverlay.getProjection().fromContainerPixelToLatLng(new google.maps.Point(x, y));
         
-        // Find which polygon contains this point
         const targetPolygon = allShapes.find(shape => {
-            // Check only polygons that are visible and editable
             if (shape.type === 'polygon' && shape.getMap()) {
                 return google.maps.geometry.poly.containsLocation(latLng, shape);
             }
@@ -917,7 +1209,9 @@ function loadMapFeatures() {
     }
 
     if(isUserAdmin){
-        document.getElementById('admin-instructions').style.display='block';
+        const adminInst = document.getElementById('admin-instructions');
+        if(adminInst) adminInst.style.display='block';
+        
         drawingManager=new google.maps.drawing.DrawingManager({
             drawingMode:google.maps.drawing.OverlayType.POLYGON,
             drawingControl:true,
@@ -961,7 +1255,6 @@ function loadMapFeatures() {
     }
 }
 
-// --- Palette Logic ---
 function toggleCampaignPalette() {
     const palette = document.getElementById('campaign-palette');
     const btn = document.getElementById('palette-btn');
@@ -978,6 +1271,7 @@ function toggleCampaignPalette() {
 
 function renderCampaignPalette() {
     const container = document.getElementById('palette-list');
+    if(!container) return;
     container.innerHTML = '';
 
     campaigns.forEach(camp => {
@@ -1010,11 +1304,9 @@ function renderCampaignPalette() {
 async function assignCampaignToPolygon(polygon, campaignId) {
     if (!auth.currentUser) return;
     
-    // Optimistic UI Update
     polygon.campaignId = campaignId;
     updateShapeColor(polygon);
     
-    // Briefly highlight
     const originalStroke = polygon.get('strokeWeight');
     polygon.setOptions({ strokeWeight: 4, strokeColor: '#00ff00' });
     setTimeout(() => polygon.setOptions({ strokeWeight: originalStroke, strokeColor: '#000000' }), 600);
@@ -1029,7 +1321,6 @@ async function assignCampaignToPolygon(polygon, campaignId) {
     }
 }
 
-// --- Heatmap Logic ---
 async function toggleHeatmap() {
     const btn = document.getElementById('heatmap-btn');
     const legend = document.getElementById('heatmap-legend');
@@ -1061,7 +1352,6 @@ async function loadHeatmapData() {
     try {
         let data = cachedData.activity;
         
-        // If data not yet loaded by Analytics tab, fetch it
         if (!data || data.length === 0) {
             const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'service_requests'));
             let rawChecks = [];
@@ -1110,17 +1400,249 @@ async function loadHeatmapData() {
     }
 }
 
-function initSearchControl() {const controlDiv=document.createElement("div");controlDiv.style.marginTop="10px";controlDiv.style.display="flex";controlDiv.style.gap="5px";controlDiv.style.zIndex="5";const searchInput=document.createElement("input");searchInput.type="text";searchInput.placeholder="Search Address";searchInput.style.padding="8px";searchInput.style.borderRadius="4px";searchInput.style.border="1px solid #ccc";const searchBtn=document.createElement("button");searchBtn.textContent="Go";searchBtn.style.padding="8px 12px";searchBtn.style.cursor="pointer";controlDiv.appendChild(searchInput);controlDiv.appendChild(searchBtn);if(map)map.controls[google.maps.ControlPosition.TOP_CENTER].push(controlDiv);const geocoder=new google.maps.Geocoder();const performSearch=()=>{const address=searchInput.value;if(!address)return;geocoder.geocode({'address':address},function(results,status){if(status==='OK'){map.setCenter(results[0].geometry.location);map.setZoom(17);if(searchMarker)searchMarker.setMap(null);searchMarker=new google.maps.Marker({map:map,position:results[0].geometry.location});}});};searchBtn.addEventListener("click",performSearch);}
-async function savePolygonToDatabase(shape) {if(!auth.currentUser)return;const coordinates=getCoordinatesFromShape(shape);try{const docRef=await addDoc(collection(db,'artifacts',appId,'public','data','polygons'),{coordinates,type:'polygon',campaignId:shape.campaignId||"",createdAt:new Date()});return docRef.id;}catch(e){console.error(e);}}
-async function updatePolygonInDatabase(id,shape) {if(!auth.currentUser||!id)return;const coordinates=getCoordinatesFromShape(shape);try{const docRef=doc(db,'artifacts',appId,'public','data','polygons',id);await updateDoc(docRef,{coordinates,campaignId:shape.campaignId||""});}catch(e){console.error(e);}}
-async function loadPolygonsFromDatabase() {if(!auth.currentUser)return;try{const querySnapshot=await getDocs(collection(db,'artifacts',appId,'public','data','polygons'));querySnapshot.forEach((doc)=>{const data=doc.data();if(data.type==='polygon'&&data.coordinates){const newPolygon=new google.maps.Polygon({paths:data.coordinates,fillOpacity:0.5,strokeWeight:2,clickable:true,editable:isUserAdmin,zIndex:1});newPolygon.type='polygon';newPolygon.firebaseId=doc.id;newPolygon.campaignId=data.campaignId||"";updateShapeColor(newPolygon);newPolygon.setMap(map);allShapes.push(newPolygon);if(isUserAdmin){attachPolygonListeners(newPolygon);google.maps.event.addListener(newPolygon,'click',function(){setSelection(newPolygon);});}}});}catch(e){console.error(e);}}
-function updateShapeColor(shape) {let color='#ffff00';if(shape.campaignId){const campaign=campaigns.find(c=>c.id===shape.campaignId);if(campaign&&campaign.color){color=campaign.color;}}shape.setOptions({fillColor:color});}
-function refreshMapColors() {allShapes.forEach(shape=>updateShapeColor(shape));}
-async function deletePolygonFromDatabase(id) {if(!auth.currentUser||!id)return;try{await deleteDoc(doc(db,'artifacts',appId,'public','data','polygons',id));}catch(e){console.error(e);}}
-function getCoordinatesFromShape(shape) {const path=shape.getPath();const coordinates=[];for(let i=0;i<path.getLength();i++){const xy=path.getAt(i);coordinates.push({lat:xy.lat(),lng:xy.lng()});}return coordinates;}
-function attachPolygonListeners(polygon) {if(!isUserAdmin)return;const path=polygon.getPath();const triggerUpdate=()=>{if(polygon.firebaseId)updatePolygonInDatabase(polygon.firebaseId,polygon);};google.maps.event.addListener(path,'set_at',triggerUpdate);google.maps.event.addListener(path,'insert_at',triggerUpdate);google.maps.event.addListener(path,'remove_at',triggerUpdate);google.maps.event.addListener(polygon,'dragend',triggerUpdate);}
-function loadPolygonsFromGeoJSON(geoJson) {if(!geoJson.features)return;geoJson.features.forEach(feature=>{if(feature.geometry&&feature.geometry.type==="Polygon"){const coords=feature.geometry.coordinates[0].map(coord=>({lat:coord[1],lng:coord[0]}));const newPolygon=new google.maps.Polygon({paths:coords,fillColor:'#ffff00',fillOpacity:0.5,strokeWeight:2,clickable:true,editable:isUserAdmin,zIndex:1});newPolygon.setMap(map);newPolygon.type='polygon';savePolygonToDatabase(newPolygon).then(id=>{newPolygon.firebaseId=id;allShapes.push(newPolygon);attachPolygonListeners(newPolygon);});if(isUserAdmin){google.maps.event.addListener(newPolygon,'click',function(){setSelection(newPolygon);});}}});}
-function setSelection(shape) {if(!isUserAdmin)return;clearSelection();selectedShape=shape;shape.setEditable(true);shape.setOptions({strokeColor:'#FF0000'});const wrapper=document.getElementById('campaign-selector-wrapper');const select=document.getElementById('campaign-select');if(wrapper&&select){wrapper.style.display='flex';select.value=shape.campaignId||"";}}
-function clearSelection() {if(selectedShape){selectedShape.setEditable(false);selectedShape.setOptions({strokeColor:'#000000'});selectedShape=null;}const wrapper=document.getElementById('campaign-selector-wrapper');if(wrapper)wrapper.style.display='none';}
-function deleteSelectedShape() {if(selectedShape&&isUserAdmin){if(selectedShape.firebaseId)deletePolygonFromDatabase(selectedShape.firebaseId);selectedShape.setMap(null);const index=allShapes.indexOf(selectedShape);if(index>-1)allShapes.splice(index,1);selectedShape=null;const wrapper=document.getElementById('campaign-selector-wrapper');if(wrapper)wrapper.style.display='none';}}
-function exporttoJSON() {const features=[];allShapes.forEach(shape=>{if(shape.type==='polygon'){const path=shape.getPath();const coordinates=[];for(let i=0;i<path.getLength();i++){const xy=path.getAt(i);coordinates.push([xy.lng(),xy.lat()]);}if(coordinates.length>0)coordinates.push(coordinates[0]);features.push({"type":"Feature","properties":{campaignId:shape.campaignId||""},"geometry":{"type":"Polygon","coordinates":[coordinates]}});}});const geoJsonData={"type":"FeatureCollection","features":features};const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(geoJsonData));const dl=document.createElement('a');dl.setAttribute("href",dataStr);dl.setAttribute("download","polygons.json");document.body.appendChild(dl);dl.click();dl.remove();}
+function initSearchControl() {
+    const controlDiv=document.createElement("div");
+    controlDiv.style.marginTop="10px";
+    controlDiv.style.display="flex";
+    controlDiv.style.gap="5px";
+    controlDiv.style.zIndex="5";
+    const searchInput=document.createElement("input");
+    searchInput.type="text";
+    searchInput.placeholder="Search Address";
+    searchInput.style.padding="8px";
+    searchInput.style.borderRadius="4px";
+    searchInput.style.border="1px solid #ccc";
+    const searchBtn=document.createElement("button");
+    searchBtn.textContent="Go";
+    searchBtn.style.padding="8px 12px";
+    searchBtn.style.cursor="pointer";
+    controlDiv.appendChild(searchInput);
+    controlDiv.appendChild(searchBtn);
+    if(map) map.controls[google.maps.ControlPosition.TOP_CENTER].push(controlDiv);
+    const geocoder=new google.maps.Geocoder();
+    const performSearch=()=>{
+        const address=searchInput.value;
+        if(!address)return;
+        geocoder.geocode({'address':address},function(results,status){
+            if(status==='OK'){
+                map.setCenter(results[0].geometry.location);
+                map.setZoom(17);
+                if(searchMarker) searchMarker.setMap(null);
+                searchMarker=new google.maps.Marker({map:map,position:results[0].geometry.location});
+            }
+        });
+    };
+    searchBtn.addEventListener("click",performSearch);
+}
+
+async function savePolygonToDatabase(shape) {
+    if(!auth.currentUser) return;
+    const coordinates=getCoordinatesFromShape(shape);
+    try {
+        const docRef=await addDoc(collection(db,'artifacts',appId,'public','data','polygons'),{
+            coordinates,type:'polygon',campaignId:shape.campaignId||"",createdAt:new Date()
+        });
+        return docRef.id;
+    } catch(e) { console.error(e); }
+}
+
+async function updatePolygonInDatabase(id, shape) {
+    if(!auth.currentUser||!id) return;
+    const coordinates=getCoordinatesFromShape(shape);
+    try {
+        const docRef=doc(db,'artifacts',appId,'public','data','polygons',id);
+        await updateDoc(docRef,{coordinates,campaignId:shape.campaignId||""});
+    } catch(e) { console.error(e); }
+}
+
+async function loadPolygonsFromDatabase() {
+    if(!auth.currentUser) return;
+    try {
+        const querySnapshot=await getDocs(collection(db,'artifacts',appId,'public','data','polygons'));
+        querySnapshot.forEach((doc)=>{
+            const data=doc.data();
+            if(data.type==='polygon'&&data.coordinates){
+                const newPolygon=new google.maps.Polygon({
+                    paths:data.coordinates,fillOpacity:0.5,strokeWeight:2,clickable:true,editable:isUserAdmin,zIndex:1
+                });
+                newPolygon.type='polygon';
+                newPolygon.firebaseId=doc.id;
+                newPolygon.campaignId=data.campaignId||"";
+                updateShapeColor(newPolygon);
+                newPolygon.setMap(map);
+                allShapes.push(newPolygon);
+                if(isUserAdmin){
+                    attachPolygonListeners(newPolygon);
+                    google.maps.event.addListener(newPolygon,'click',function(){setSelection(newPolygon);});
+                }
+            }
+        });
+    } catch(e) { console.error(e); }
+}
+
+function updateShapeColor(shape) {
+    let color='#ffff00';
+    if(shape.campaignId){
+        const campaign=campaigns.find(c=>c.id===shape.campaignId);
+        if(campaign&&campaign.color){color=campaign.color;}
+    }
+    shape.setOptions({fillColor:color});
+}
+
+function refreshMapColors() {
+    allShapes.forEach(shape=>updateShapeColor(shape));
+}
+
+async function deletePolygonFromDatabase(id) {
+    if(!auth.currentUser||!id) return;
+    try {
+        await deleteDoc(doc(db,'artifacts',appId,'public','data','polygons',id));
+    } catch(e) { console.error(e); }
+}
+
+function getCoordinatesFromShape(shape) {
+    const path=shape.getPath();
+    const coordinates=[];
+    for(let i=0;i<path.getLength();i++){
+        const xy=path.getAt(i);
+        coordinates.push({lat:xy.lat(),lng:xy.lng()});
+    }
+    return coordinates;
+}
+
+function attachPolygonListeners(polygon) {
+    if(!isUserAdmin) return;
+    const path=polygon.getPath();
+    const triggerUpdate=()=>{
+        if(polygon.firebaseId) updatePolygonInDatabase(polygon.firebaseId,polygon);
+    };
+    google.maps.event.addListener(path,'set_at',triggerUpdate);
+    google.maps.event.addListener(path,'insert_at',triggerUpdate);
+    google.maps.event.addListener(path,'remove_at',triggerUpdate);
+    google.maps.event.addListener(polygon,'dragend',triggerUpdate);
+}
+
+function loadPolygonsFromGeoJSON(geoJson) {
+    if(!geoJson.features) return;
+    geoJson.features.forEach(feature=>{
+        if(feature.geometry&&feature.geometry.type==="Polygon"){
+            const coords=feature.geometry.coordinates[0].map(coord=>({lat:coord[1],lng:coord[0]}));
+            const newPolygon=new google.maps.Polygon({
+                paths:coords,fillColor:'#ffff00',fillOpacity:0.5,strokeWeight:2,clickable:true,editable:isUserAdmin,zIndex:1
+            });
+            newPolygon.setMap(map);
+            newPolygon.type='polygon';
+            savePolygonToDatabase(newPolygon).then(id=>{
+                newPolygon.firebaseId=id;
+                allShapes.push(newPolygon);
+                attachPolygonListeners(newPolygon);
+            });
+            if(isUserAdmin){
+                google.maps.event.addListener(newPolygon,'click',function(){setSelection(newPolygon);});
+            }
+        }
+    });
+}
+
+function setSelection(shape) {
+    if(!isUserAdmin) return;
+    clearSelection();
+    selectedShape=shape;
+    shape.setEditable(true);
+    shape.setOptions({strokeColor:'#FF0000'});
+    const wrapper=document.getElementById('campaign-selector-wrapper');
+    const select=document.getElementById('campaign-select');
+    if(wrapper&&select){
+        wrapper.style.display='flex';
+        select.value=shape.campaignId||"";
+    }
+}
+
+function clearSelection() {
+    if(selectedShape){
+        selectedShape.setEditable(false);
+        selectedShape.setOptions({strokeColor:'#000000'});
+        selectedShape=null;
+    }
+    const wrapper=document.getElementById('campaign-selector-wrapper');
+    if(wrapper) wrapper.style.display='none';
+}
+
+function deleteSelectedShape() {
+    if(selectedShape&&isUserAdmin){
+        if(selectedShape.firebaseId) deletePolygonFromDatabase(selectedShape.firebaseId);
+        selectedShape.setMap(null);
+        const index=allShapes.indexOf(selectedShape);
+        if(index>-1) allShapes.splice(index,1);
+        selectedShape=null;
+        const wrapper=document.getElementById('campaign-selector-wrapper');
+        if(wrapper) wrapper.style.display='none';
+    }
+}
+
+function exporttoJSON() {
+    const features=[];
+    allShapes.forEach(shape=>{
+        if(shape.type==='polygon'){
+            const path=shape.getPath();
+            const coordinates=[];
+            for(let i=0;i<path.getLength();i++){
+                const xy=path.getAt(i);
+                coordinates.push([xy.lng(),xy.lat()]);
+            }
+            if(coordinates.length>0) coordinates.push(coordinates[0]);
+            features.push({
+                "type":"Feature",
+                "properties":{campaignId:shape.campaignId||""},
+                "geometry":{"type":"Polygon","coordinates":[coordinates]}
+            });
+        }
+    });
+    const geoJsonData={"type":"FeatureCollection","features":features};
+    const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(geoJsonData));
+    const dl=document.createElement('a');
+    dl.setAttribute("href",dataStr);
+    dl.setAttribute("download","polygons.json");
+    document.body.appendChild(dl);
+    dl.click();
+    dl.remove();
+}
+
+// Global functions for inline HTML calls (Assigned last to ensure definition exists)
+window.openCampaignModal = openCampaignModal;
+window.switchTableView = switchTableView;
+window.moveRowUp = moveRowUp;
+window.moveRowDown = moveRowDown;
+window.togglePromo = togglePromo;
+window.deleteCampaign = async function(id) {
+    if(!confirm("Delete this campaign?")) return;
+    try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'campaigns', id)); } catch (e) { console.error(e); }
+};
+window.duplicateCampaign = function(id) {
+    let campaign;
+    if (id === 'global_default') campaign = globalDefaultCampaign;
+    else campaign = campaigns.find(c => c.id === id);
+    if (!campaign) return;
+    
+    openCampaignModal(); 
+    document.getElementById('camp-name').value = (campaign.name || 'Campaign') + " (Copy)";
+    document.getElementById('camp-color').value = campaign.color || '#ff0000';
+    
+    const container = document.getElementById('plans-container');
+    container.innerHTML = '';
+    if (campaign.plans) {
+        Object.entries(campaign.plans).forEach(([name, details]) => {
+            addPlanRow(
+                name, 
+                details.price, 
+                details.speed, 
+                details.isPopular, 
+                details.promoPrice, 
+                details.promoLabel, 
+                details.promoEnd, 
+                details.stickers,
+                details.description
+            );
+        });
+    }
+};
