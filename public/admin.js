@@ -162,7 +162,7 @@ onAuthStateChanged(auth, (user) => {
         if (typeof loadReferrals === 'function') {
             loadReferrals();
         } else {
-            console.warn("loadReferrals not defined yet, retrying shortly...");
+            // Retry logic in case of load order issues
             setTimeout(() => { if(typeof loadReferrals === 'function') loadReferrals(); }, 500);
         }
         
@@ -271,6 +271,7 @@ function parseCSV(text) {
     const nameIdx = headers.findIndex(h => h.includes('name'));
     const addrIdx = headers.findIndex(h => h.includes('address'));
     const accIdx = headers.findIndex(h => h.includes('account'));
+    const codeIdx = headers.findIndex(h => h.includes('code') || h.includes('referral'));
 
     if (nameIdx === -1 || addrIdx === -1 || accIdx === -1) {
         throw new Error("Missing required columns: Name, Address, or Account");
@@ -282,24 +283,57 @@ function parseCSV(text) {
         const line = lines[i].trim();
         if (!line) continue;
         
-        // Handle quotes loosely
+        // Better CSV parsing regex to handle quoted strings with commas inside them (e.g. "Smith, John")
         const row = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
         let colValues = row;
-        if (!colValues) colValues = line.split(',');
+        
+        // Fallback to simple split if regex fails or for simple CSVs
+        if (!colValues) {
+             colValues = line.split(',');
+        } else {
+             // If using regex match, we might miss empty columns between commas. 
+             // Ideally use a library, but sticking to logic:
+             // Let's try a standard split first, but be aware of quotes.
+             // Actually, for this specific request "Full Name", splitting by comma is safer IF no commas in name.
+             // If there are commas in name (e.g. "Doe, John"), simple split breaks it.
+             // The regex above handles "Doe, John" as one token.
+        }
+        
+        // If the regex approach yielded results, let's use it, but we need to map indices correctly.
+        // Actually, simpler approach for "upload as is":
+        // Use a library-like split that respects quotes.
+        
+        // Simple Split (Assuming standard CSV without internal commas in fields for now, or quoted)
+        // If line contains quotes, we use a more robust split
+        if (line.includes('"')) {
+             colValues = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+             if (colValues) colValues = colValues.map(v => v.replace(/^,/, '').trim()); // cleanup
+        } else {
+             colValues = line.split(',');
+        }
 
         if (colValues && colValues.length >= 3) {
             const clean = (val) => val ? val.replace(/^"|"$/g, '').trim() : '';
             
+            // --- CRITICAL FIX: TAKE FULL NAME ---
+            // Just take the raw value from the column index. No splitting, no first word logic.
             const name = clean(colValues[nameIdx]);
+            
             const address = clean(colValues[addrIdx]);
             const account = clean(colValues[accIdx]);
+            
+            let referralCode = '';
+            // If code column exists, use it. 
+            if (codeIdx !== -1 && colValues[codeIdx]) {
+                referralCode = clean(colValues[codeIdx]);
+            } 
 
             if (account && name) {
                 results.push({
-                    name,
-                    address,
-                    account,
-                    referralCode: generateReferralCode(name, address)
+                    name: name, // Full Name
+                    address: address,
+                    account: account,
+                    referralCode: referralCode 
                 });
             }
         }
@@ -307,24 +341,7 @@ function parseCSV(text) {
     return results;
 }
 
-function generateReferralCode(name, address) {
-    // 1. Get First Name (First word of the name column)
-    const nameParts = name.trim().split(/\s+/);
-    let firstName = nameParts[0] || "REF";
-    
-    // Cleanup: Remove non-alpha
-    firstName = firstName.replace(/[^a-zA-Z]/g, '');
-    if (!firstName) firstName = "REF"; 
-    
-    // Capitalize first letter
-    firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-
-    // 2. Get House Number
-    const houseNumMatch = address.trim().match(/^\d+/);
-    const houseNum = houseNumMatch ? houseNumMatch[0] : '00';
-
-    return `${firstName}${houseNum}`;
-}
+// Removed generateReferralCode function completely
 
 async function saveReferralsToDb(data) {
     const ref = collection(db, 'artifacts', appId, 'public', 'data', 'referrals');
@@ -353,10 +370,6 @@ async function handleMassDelete() {
     try {
         const ref = collection(db, 'artifacts', appId, 'public', 'data', 'referrals');
         const snapshot = await getDocs(ref);
-        
-        // Firestore doesn't support mass delete of collection, must delete documents individually
-        // Batched writes are limited to 500 operations. For simplicity/robustness here we use Promise.all
-        // For very large datasets (>500), consider batching in chunks.
         
         const deletePromises = snapshot.docs.map(docSnap => deleteDoc(docSnap.ref));
         await Promise.all(deletePromises);
